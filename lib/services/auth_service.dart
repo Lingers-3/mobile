@@ -1,7 +1,15 @@
+import 'dart:async';
+
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/views/auth_gate.dart';
 
 class AuthService {
+  AuthService._privateConstructor();
+  static final AuthService _instance = AuthService._privateConstructor();
+  factory AuthService() => _instance;
+
   static const String auth0Domain = 'dev-sdqqsvfi11hhx02d.us.auth0.com';
   static const String auth0ClientId = 'CammOhigYyH161HW6LQ3vL9oZsNOl7Oy';
 
@@ -31,20 +39,27 @@ class AuthService {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
     try {
-      await auth0
-          .webAuthentication(scheme: 'pocketeer')
-          .logout(
-            returnTo:
-                'pocketeer://dev-sdqqsvfi11hhx02d.us.auth0.com/android/com.example.pocketeer_mobile/logout',
-          );
+      unawaited(auth0.webAuthentication(scheme: 'pocketeer').logout());
+
+      await Future.delayed(const Duration(seconds: 1));
+
       _credentials = null;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Помилка виходу: $e');
+
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+          (route) => false,
+        );
       }
+    } catch (e) {
+      if (kDebugMode) print('❌ Помилка виходу: $e');
     }
+  }
+
+  void clearCredentials() {
+    _credentials = null;
   }
 
   Credentials? get credentials => _credentials;

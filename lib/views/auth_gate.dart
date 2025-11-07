@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/views/main_app_shell.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart';
 
 enum AuthFlowStatus { checking, loggedIn }
 
@@ -52,7 +52,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_status == AuthFlowStatus.loggedIn) {
-      return const HomeScreen();
+      return MainAppShell();
     }
 
     return const Scaffold(
