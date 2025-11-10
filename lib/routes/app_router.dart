@@ -1,0 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/ui/views/auth/auth_gate.dart';
+import 'package:pocketeer_mobile/ui/views/auth/verify_email_screen.dart';
+import 'package:pocketeer_mobile/ui/views/main_app_shell.dart';
+
+class AppRouter {
+  static const authGate = '/';
+  static const verifyEmail = '/verify-email';
+  static const main = '/main';
+
+  static Route<dynamic> generate(RouteSettings settings) {
+    switch (settings.name) {
+      case authGate:
+        return MaterialPageRoute(builder: (_) => const AuthGate());
+      case verifyEmail:
+        return MaterialPageRoute(builder: (_) => const VerifyEmailScreen());
+      case main:
+        return MaterialPageRoute(builder: (_) => const MainAppShell());
+      default:
+        return MaterialPageRoute(builder: (_) => const AuthGate());
+    }
+  }
+}
