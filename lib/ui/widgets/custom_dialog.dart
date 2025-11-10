@@ -1,16 +1,17 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:pocketeer_mobile/services/auth_service.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 
-class LogoutConfirmationDialog extends StatelessWidget {
-  const LogoutConfirmationDialog({super.key});
+class CustomDialog extends StatelessWidget {
+  const CustomDialog({
+    super.key,
+    required this.label,
+    required this.confirmationText,
+    required this.dialogFunction,
+  });
 
-  Future<void> _handleLogout(BuildContext context) async {
-    final authService = AuthService();
-    authService.logout(context);
-  }
+  final String label;
+  final String confirmationText;
+  final Future<void> Function() dialogFunction;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +20,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
 
       title: Text(
-        'Confirmation',
+        label,
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.normal,
@@ -30,9 +31,9 @@ class LogoutConfirmationDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Are you sure you want to log out from account?',
-            style: TextStyle(color: Colors.white, fontSize: 13),
+          Text(
+            confirmationText,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
           ),
           const SizedBox(height: 32),
           Row(
@@ -67,7 +68,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: OutlinedButton.icon(
-                  onPressed: () => _handleLogout(context),
+                  onPressed: dialogFunction,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: const BorderSide(color: AppColors.purple),

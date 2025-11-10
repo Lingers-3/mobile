@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pocketeer_mobile/views/auth_gate.dart';
+import 'package:pocketeer_mobile/routes/app_router.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +13,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pocketeer',
       debugShowCheckedModeBanner: false,
-      home: const AuthGate(),
+      onGenerateRoute: AppRouter.generate,
+      initialRoute: AppRouter.authGate,
     );
   }
 }

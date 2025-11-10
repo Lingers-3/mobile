@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pocketeer_mobile/services/auth_service.dart';
+import 'package:pocketeer_mobile/data/services/auth_service.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
-import 'package:pocketeer_mobile/widgets/logout_confirmation_dialog.dart';
-import 'package:pocketeer_mobile/widgets/setting_button.dart';
+import 'package:pocketeer_mobile/ui/widgets/delete_account_confirmation_dialog.dart';
+import 'package:pocketeer_mobile/ui/widgets/logout_confirmation_dialog.dart';
+import 'package:pocketeer_mobile/ui/widgets/setting_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,6 +22,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (BuildContext context) {
         return LogoutConfirmationDialog();
+      },
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteAccountDialog();
       },
     );
   }
@@ -50,7 +60,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               buttonFunction: _showLogoutConfirmDialog,
             ),
             SizedBox(height: 40),
-            SettingButton(buttonText: 'Delete Account', buttonFunction: () {}),
+            SettingButton(
+              buttonText: 'Delete Account',
+              buttonFunction: _showDeleteAccountDialog,
+            ),
           ],
         ),
       ),

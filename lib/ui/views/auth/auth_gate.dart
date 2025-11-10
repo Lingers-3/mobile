@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/services/auth_service.dart';
+import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
-import 'package:pocketeer_mobile/views/main_app_shell.dart';
-import '../services/auth_service.dart';
+import 'package:pocketeer_mobile/ui/views/main_app_shell.dart';
 
 enum AuthFlowStatus { checking, loggedIn }
 
@@ -19,40 +20,36 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    _handleAuthFlow();
+    Future.microtask(() => _handleAuthFlow(context));
   }
 
-  void _handleAuthFlow() async {
-    if (_status != AuthFlowStatus.checking) {
-      setState(() {
-        _status = AuthFlowStatus.checking;
-      });
-    }
-    if (_authService.isAuthenticated) {
-      if (mounted) {
-        setState(() {
-          _status = AuthFlowStatus.loggedIn;
-        });
-      }
-      return;
-    }
-    final success = await _authService.login();
-    if (mounted) {
-      if (success) {
-        setState(() {
-          _status = AuthFlowStatus.loggedIn;
-        });
-      } else {
+  Future<void> _handleAuthFlow(BuildContext context) async {
+    if (!mounted) return;
+
+    setState(() => _status = AuthFlowStatus.checking);
+
+    final result = await _authService.login();
+
+    if (!mounted) return;
+
+    switch (result) {
+      case AuthResult.success:
+        setState(() => _status = AuthFlowStatus.loggedIn);
+        break;
+      case AuthResult.emailNotVerified:
+        Navigator.pushReplacementNamed(context, AppRouter.verifyEmail);
+        break;
+      case AuthResult.error:
         await Future.delayed(const Duration(seconds: 2));
-        _handleAuthFlow();
-      }
+        _handleAuthFlow(context);
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_status == AuthFlowStatus.loggedIn) {
-      return MainAppShell();
+      return const MainAppShell();
     }
 
     return const Scaffold(
@@ -60,17 +57,16 @@ class _AuthGateState extends State<AuthGate> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
             CircularProgressIndicator(color: AppColors.pink),
             SizedBox(height: 20),
             Text(
-              'Перевірка авторизації...',
+              'Checking authorization...',
               style: TextStyle(fontSize: 18, color: AppColors.pink),
             ),
             SizedBox(height: 8),
             Text(
-              'Вас буде автоматично перенаправлено у браузер.',
+              'You will be automatically redirect in browser.',
               style: TextStyle(fontSize: 14, color: AppColors.cyan),
             ),
           ],
