@@ -15,6 +15,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRouter.generate,
       initialRoute: AppRouter.authGate,
+      
     );
   }
 }
