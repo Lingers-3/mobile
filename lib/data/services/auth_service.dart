@@ -119,6 +119,41 @@ class AuthService {
     }
   }
 
+  Future<bool> changePassword(String newPassword) async {
+    if (_credentials == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.apiBaseUrl}/api/auth/change-password'),
+        headers: {
+          'Authorization': 'Bearer ${_credentials!.accessToken}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'newPassword': newPassword}),
+      );
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) print('✅ Пароль успішно змінено');
+        return true;
+      }
+
+      if (kDebugMode) {
+        print('⚠️ Не вдалося змінити пароль: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('❌ Помилка при зміні пароля: $e');
+      return false;
+    }
+  }
+
+  bool get canChangePassword {
+    if (_credentials == null) return false;
+    final sub = _credentials!.user.sub;
+    return sub.startsWith('auth0|');
+  }
+
   void clearCredentials() => _credentials = null;
 
   Credentials? get credentials => _credentials;

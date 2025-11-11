@@ -21,6 +21,7 @@ class AppColors {
 final ThemeData appTheme = ThemeData(
   scaffoldBackgroundColor: AppColors.primaryBackground,
   brightness: Brightness.dark,
+  useMaterial3: false,
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: AppColors.primaryBackground,
     selectedItemColor: AppColors.pink,

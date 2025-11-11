@@ -20,10 +20,10 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => _handleAuthFlow(context));
+    Future.microtask(_handleAuthFlow);
   }
 
-  Future<void> _handleAuthFlow(BuildContext context) async {
+  Future<void> _handleAuthFlow() async {
     if (!mounted) return;
 
     setState(() => _status = AuthFlowStatus.checking);
@@ -36,12 +36,16 @@ class _AuthGateState extends State<AuthGate> {
       case AuthResult.success:
         setState(() => _status = AuthFlowStatus.loggedIn);
         break;
+
       case AuthResult.emailNotVerified:
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, AppRouter.verifyEmail);
         break;
+
       case AuthResult.error:
         await Future.delayed(const Duration(seconds: 2));
-        _handleAuthFlow(context);
+        if (!mounted) return;
+        _handleAuthFlow();
         break;
     }
   }
@@ -66,7 +70,7 @@ class _AuthGateState extends State<AuthGate> {
             ),
             SizedBox(height: 8),
             Text(
-              'You will be automatically redirect in browser.',
+              'You will be automatically redirected in the browser.',
               style: TextStyle(fontSize: 14, color: AppColors.cyan),
             ),
           ],

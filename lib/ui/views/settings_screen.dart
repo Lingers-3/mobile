@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
+import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/widgets/delete_account_confirmation_dialog.dart';
 import 'package:pocketeer_mobile/ui/widgets/logout_confirmation_dialog.dart';
@@ -53,7 +54,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontSize: 26, color: AppColors.purple),
             ),
             SizedBox(height: 40),
-            SettingButton(buttonText: 'Change Password', buttonFunction: () {}),
+            SettingButton(
+              buttonText: 'Change Password',
+              buttonFunction: () {
+                if (!authService.canChangePassword) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      backgroundColor: AppColors.purple,
+
+                      content: Text(
+                        'Cannot change password for Google',
+                        style: TextStyle(color: AppColors.primaryBackground),
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pushNamed(context, AppRouter.changePassword);
+              },
+            ),
             SizedBox(height: 40),
             SettingButton(
               buttonText: 'Logout',

@@ -8,13 +8,13 @@ class MainAppShell extends StatefulWidget {
   const MainAppShell({super.key});
 
   @override
-  State<StatefulWidget> createState() {
-    return _MainAppShellState();
-  }
+  State<MainAppShell> createState() => _MainAppShellState();
 }
 
 class _MainAppShellState extends State<MainAppShell> {
+  final PageController _pageController = PageController();
   int _selectedIndex = 0;
+
   static const List<Widget> _widgetsOptions = <Widget>[
     InventoryScreen(),
     ProjectsScreen(),
@@ -22,15 +22,29 @@ class _MainAppShellState extends State<MainAppShell> {
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInQuint,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: _widgetsOptions.elementAt(_selectedIndex)),
+      body: PageView(
+        controller: _pageController,
+        physics: ClampingScrollPhysics(),
+        onPageChanged: (index) => setState(() => _selectedIndex = index),
+        children: _widgetsOptions,
+      ),
       bottomNavigationBar: BottomNav(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
