@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/routes/app_router.dart';
+import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => ItemTypeProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -15,7 +22,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRouter.generate,
       initialRoute: AppRouter.authGate,
-      
+
+      builder: (context, child) {
+        return child!;
+      },
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/services/auth_service.dart';
 import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 
@@ -9,6 +10,16 @@ class VerifyEmailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryBackground,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            AuthService().logout(context);
+            Navigator.pushReplacementNamed(context, AppRouter.authGate);
+          },
+        ),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
