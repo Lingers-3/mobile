@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
+import 'package:pocketeer_mobile/providers/tag_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:provider/provider.dart';
 import 'edit_item_type_screen.dart';
 
 class ShowItemTypeScreen extends StatefulWidget {
@@ -19,6 +21,12 @@ class _ShowItemTypeScreenState extends State<ShowItemTypeScreen> {
   void initState() {
     super.initState();
     _itemType = widget.itemType;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prov = context.read<TagProvider>();
+      if (prov.tags.isEmpty && !prov.loading) {
+        prov.loadTags();
+      }
+    });
   }
 
   Future<void> _openEdit() async {
@@ -80,11 +88,18 @@ class _ShowItemTypeScreenState extends State<ShowItemTypeScreen> {
               "Shortage threshold",
               _itemType.shortageThreshold?.toString() ?? "-",
             ),
-            _infoTile("Tags", _itemType.tagIds.join(", ")),
+            _buildTagsTile(context),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildTagsTile(BuildContext context) {
+    final tagProv = context.watch<TagProvider>();
+    final tags = tagProv.tagsForItem(_itemType.tagIds);
+    final content = tags.isEmpty ? "-" : tags.map((t) => t.name).join(", ");
+    return _infoTile("Tags", content);
   }
 
   Widget _infoTile(String title, String value) {

@@ -7,6 +7,7 @@ import 'package:pocketeer_mobile/data/models/item_types/item_type_update_request
 import 'package:pocketeer_mobile/data/services/item_type_service.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/ui/widgets/tag_selector.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 
 class EditItemTypeScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
 
   late Unit _baseUnit;
   late Unit _displayUnit;
+  late List<int> _selectedTags;
 
   bool _saving = false;
 
@@ -52,6 +54,8 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
       _displayUnit,
       unitsOfCategory(_baseUnit.category),
     );
+
+    _selectedTags = [...widget.itemType.tagIds];
   }
 
   @override
@@ -75,6 +79,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
       displayMeasurementUnit: _displayUnit.backendValue,
       defaultQuantity: double.tryParse(_defaultQtyCtrl.text),
       shortageThreshold: double.tryParse(_shortageCtrl.text),
+      tagIds: _selectedTags,
     );
 
     final updated = await _service.updateItemType(widget.itemType.id, req);
@@ -97,6 +102,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: AppColors.purple),
         backgroundColor: AppColors.primaryBackground,
         title: Text(
           "Edit ${widget.itemType.name}",
@@ -187,22 +193,34 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
                 type: TextInputType.number,
               ),
 
+              const SizedBox(height: 16),
+              TagSelector(
+                selected: _selectedTags,
+                onChanged: (v) => setState(() => _selectedTags = v),
+              ),
+
               const SizedBox(height: 24),
 
-              ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.pink,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.fadePurple,
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: _saving
-                    ? const CircularProgressIndicator(
-                        color: AppColors.primaryBackground,
-                      )
-                    : const Text(
-                        "Save",
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: _saving
+                      ? const CircularProgressIndicator(
+                          color: AppColors.primaryBackground,
+                        )
+                      : const Text(
+                          "Save",
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
+                ),
               ),
             ],
           ),

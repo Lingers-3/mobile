@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/providers/tag_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'edit_item_screen.dart';
@@ -22,6 +23,12 @@ class _ShowItemScreenState extends State<ShowItemScreen> {
   void initState() {
     super.initState();
     _item = widget.item;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prov = context.read<TagProvider>();
+      if (prov.tags.isEmpty && !prov.loading) {
+        prov.loadTags();
+      }
+    });
   }
 
   Future<void> _openEdit() async {
@@ -71,6 +78,11 @@ class _ShowItemScreenState extends State<ShowItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tagProv = context.watch<TagProvider>();
+    final tagNames = tagProv
+        .tagsForItem(_item.tagIds)
+        .map((t) => t.name)
+        .toList();
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
       appBar: AppBar(
@@ -107,7 +119,7 @@ class _ShowItemScreenState extends State<ShowItemScreen> {
             "Purchase price",
             _item.purchasePrice?.toStringAsFixed(2) ?? "-",
           ),
-          infoTile("Tags", _item.tagIds.join(", ")),
+          infoTile("Tags", tagNames.isEmpty ? "-" : tagNames.join(", ")),
         ],
       ),
     );

@@ -29,7 +29,6 @@ class Item {
     return Item(
       id: json['id'] as int,
       description: json['description'] as String?,
-      // Безпечне перетворення числових типів
       quantity: (json['quantity'] as num).toDouble(),
       expirationDate: json['expiration_date'] != null
           ? DateTime.parse(json['expiration_date'] as String)
@@ -64,3 +63,4 @@ class Item {
     };
   }
 }
+

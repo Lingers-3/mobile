@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// Переконайтеся, що цей шлях правильний для вашої теми
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -26,42 +25,27 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      style: const TextStyle(
-        color: AppColors.purple,
-      ), // Колір тексту, що вводиться
+      style: const TextStyle(color: AppColors.pink),
       validator: validator,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
         hintStyle: TextStyle(color: AppColors.pink.withOpacity(0.7)),
-
-        // Стилістика для фону і рамок
         filled: true,
-        fillColor: AppColors.primaryBackground, // Темний фон для поля
-        // Нормальний стан
-        border: OutlineInputBorder(
+        fillColor: AppColors.primaryBackground,
+        enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.purple,
-          ), // Прибираємо видиму рамку, залишаємо фон
+          borderSide: BorderSide(color: AppColors.purple.withOpacity(0.5)),
         ),
-
-        // Фокус (коли користувач друкує)
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: AppColors.pink, // Рожева рамка при фокусі
-            width: 2.0,
-          ),
+          borderSide: const BorderSide(color: AppColors.pink, width: 2),
         ),
-
-        // Стиль для label (піднімається нагору)
         labelStyle: const TextStyle(color: AppColors.purple),
         floatingLabelStyle: const TextStyle(
-          color: AppColors.pink, // Рожевий колір піднятого label
+          color: AppColors.pink,
           fontWeight: FontWeight.bold,
         ),
-
         contentPadding: EdgeInsets.symmetric(
           vertical: maxLines > 1 ? 16.0 : 18.0,
           horizontal: 12.0,

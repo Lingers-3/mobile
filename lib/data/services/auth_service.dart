@@ -33,7 +33,7 @@ class AuthService {
           );
 
       if (kDebugMode) {
-        print('✅ Успішний вхід! Access token: ${_credentials!.accessToken}');
+        print('✅ Login successful. Access token: ${_credentials!.accessToken}');
       }
 
       final response = await http.get(
@@ -46,11 +46,11 @@ class AuthService {
         final isVerified = data['email_verified'] ?? false;
 
         if (!isVerified) {
-          if (kDebugMode) print('⚠️ Email не підтверджено');
+          if (kDebugMode) print('⚠️ Email not verified');
           return AuthResult.emailNotVerified;
         }
 
-        if (kDebugMode) print('✅ Email підтверджено');
+        if (kDebugMode) print('✅ Email verified');
         return AuthResult.success;
       }
 
@@ -66,7 +66,7 @@ class AuthService {
         return AuthResult.emailNotVerified;
       }
 
-      if (kDebugMode) print('❌ Помилка логіну: $e');
+      if (kDebugMode) print('❌ Login error: $e');
       return AuthResult.error;
     }
   }
@@ -81,7 +81,7 @@ class AuthService {
         Navigator.pushReplacementNamed(context, AppRouter.authGate);
       }
     } catch (e) {
-      if (kDebugMode) print('❌ Помилка виходу: $e');
+      if (kDebugMode) print('❌ Logout error: $e');
     }
   }
 
@@ -98,10 +98,10 @@ class AuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 404) {
-        if (kDebugMode) print('✅ Акаунт видалено');
+        if (kDebugMode) print('✅ Account deleted');
       } else {
         if (kDebugMode) {
-          print('⚠️ Помилка при видаленні: ${response.statusCode}');
+          print('⚠️ Delete error: ${response.statusCode}');
           print('Response: ${response.body}');
         }
       }
@@ -111,7 +111,7 @@ class AuthService {
         Navigator.pushReplacementNamed(context, AppRouter.authGate);
       }
     } catch (e) {
-      if (kDebugMode) print('❌ Виключення при deleteAccount: $e');
+      if (kDebugMode) print('❌ Exception during deleteAccount: $e');
       _credentials = null;
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, AppRouter.authGate);
@@ -133,17 +133,17 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        if (kDebugMode) print('✅ Пароль успішно змінено');
+        if (kDebugMode) print('✅ Password changed');
         return true;
       }
 
       if (kDebugMode) {
-        print('⚠️ Не вдалося змінити пароль: ${response.statusCode}');
+        print('⚠️ Password change failed: ${response.statusCode}');
         print('Response: ${response.body}');
       }
       return false;
     } catch (e) {
-      if (kDebugMode) print('❌ Помилка при зміні пароля: $e');
+      if (kDebugMode) print('❌ Password change error: $e');
       return false;
     }
   }
