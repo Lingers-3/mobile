@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
@@ -6,7 +7,10 @@ import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 void main() {
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => ItemTypeProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => ItemTypeProvider()),
+        ChangeNotifierProvider(create: (_) => ItemProvider()),
+      ],
       child: const MyApp(),
     ),
   );

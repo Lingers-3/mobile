@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'change_password_controller.dart';
-import 'widgets/password_rules_widget.dart';
+import '../../../widgets/password_rules_widget.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});

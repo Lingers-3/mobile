@@ -1,0 +1,198 @@
+import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/models/items/item.dart';
+import 'package:pocketeer_mobile/data/models/items/item_update_request.dart';
+import 'package:pocketeer_mobile/data/services/item_service.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_date_input.dart';
+
+import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
+
+class EditItemScreen extends StatefulWidget {
+  final Item item;
+
+  const EditItemScreen({super.key, required this.item});
+
+  @override
+  State<EditItemScreen> createState() => _EditItemScreenState();
+}
+
+class _EditItemScreenState extends State<EditItemScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _service = ItemService();
+
+  late TextEditingController _descriptionCtrl;
+  late TextEditingController _quantityCtrl;
+  late TextEditingController _priceCtrl;
+
+  DateTime? _expirationDate;
+
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _descriptionCtrl = TextEditingController(
+      text: widget.item.description ?? "",
+    );
+    _quantityCtrl = TextEditingController(
+      text: widget.item.quantity.toString(),
+    );
+    _priceCtrl = TextEditingController(
+      text: widget.item.purchasePrice?.toString() ?? "",
+    );
+
+    _expirationDate = widget.item.expirationDate;
+  }
+
+  @override
+  void dispose() {
+    _descriptionCtrl.dispose();
+    _quantityCtrl.dispose();
+    _priceCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final req = ItemUpdateRequest(
+        description: _descriptionCtrl.text.trim(),
+        quantity: double.tryParse(_quantityCtrl.text),
+        purchasePrice: double.tryParse(_priceCtrl.text),
+        expirationDate: _expirationDate,
+        displayMeasurementUnit: widget.item.displayMeasurementUnit,
+      );
+
+      final updated = await _service.updateItem(widget.item.id, req);
+
+      if (!mounted) return;
+      Navigator.of(context).pop(updated);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Помилка оновлення: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primaryBackground,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryBackground,
+        title: const Text(
+          "Edit Item",
+          style: TextStyle(color: AppColors.purple),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.purple),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                CustomTextField(
+                  controller: _descriptionCtrl,
+                  labelText: "Description",
+                  hintText: "Опис (необов’язково)",
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                CustomTextField(
+                  controller: _quantityCtrl,
+                  labelText: "Quantity (${widget.item.displayMeasurementUnit})",
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      if (double.tryParse(value) == null) {
+                        return "Введіть коректне число";
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                CustomTextField(
+                  controller: _priceCtrl,
+                  labelText: "Purchase Price",
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      if (double.tryParse(value) == null) {
+                        return "Введіть коректну ціну";
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                CustomDateInput(
+                  selectedDate: _expirationDate,
+                  label: "Expiration date",
+                  onDateSelected: (date) {
+                    if (date != null) {
+                      setState(() {
+                        _expirationDate = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          12,
+                          0,
+                          0,
+                        );
+                      });
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 32),
+
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.fadePurple,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                    ),
+                    child: _loading
+                        ? const CircularProgressIndicator(
+                            color: AppColors.primaryBackground,
+                          )
+                        : const Text(
+                            "Save",
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

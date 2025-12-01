@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/ui/views/inventory/inventory_screen.dart';
 import 'package:pocketeer_mobile/ui/views/projects_screen.dart';
-import 'package:pocketeer_mobile/ui/views/settings_screen.dart';
+import 'package:pocketeer_mobile/ui/views/settings/settings_screen.dart';
 import 'package:pocketeer_mobile/ui/widgets/bottom_nav.dart';
 
 class MainAppShell extends StatefulWidget {

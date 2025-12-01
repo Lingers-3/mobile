@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pocketeer_mobile/data/models/item_type.dart';
+import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'edit_item_type_screen.dart';
 
