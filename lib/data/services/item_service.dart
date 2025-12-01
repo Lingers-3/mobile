@@ -16,7 +16,7 @@ class ItemService {
   String _ensureToken() {
     final token = _authService.credentials?.accessToken;
     if (token == null) {
-      throw Exception('Користувач не авторизований');
+      throw Exception('Not authorized');
     }
     return token;
   }
@@ -44,7 +44,7 @@ class ItemService {
       debugPrint('📥 Fetched items:\n$formattedJson');
     }
 
-    // 🔥 ФІЛЬТРУЄМО soft-deleted айтеми
+    // Filter out soft-deleted items
     final filteredData = data.where((e) => e['deleted_at'] == null).toList();
 
     return filteredData.map((json) => Item.fromJson(json)).toList();
@@ -59,7 +59,7 @@ class ItemService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Не вдалося завантажити айтем');
+      throw Exception('Failed to load item');
     }
 
     return Item.fromJson(jsonDecode(response.body));
@@ -68,12 +68,12 @@ class ItemService {
   Future<Item> createItem(ItemCreateRequest request) async {
     final token = _ensureToken();
 
-    final requestBody = jsonEncode(request.toJson()); // Зберігаємо тіло
+    final requestBody = jsonEncode(request.toJson());
 
     if (kDebugMode) {
       print(
         '📤 Sending Item Create Request: $requestBody',
-      ); // Логуємо те, що відправляємо
+      );
     }
 
     final response = await http.post(
@@ -87,14 +87,14 @@ class ItemService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       if (kDebugMode) {
-        print('❌ Помилка створення айтема: ${response.statusCode}');
+        print('❌ Failed to create item: ${response.statusCode}');
         print(response.body);
       }
-      throw Exception('Не вдалося створити айтем');
+      throw Exception('Failed to create item');
     }
 
     if (kDebugMode) {
-      print('✅ Айтем успішно створено!');
+      print('✅ Item created');
     }
 
     return Item.fromJson(jsonDecode(response.body));
@@ -105,7 +105,7 @@ class ItemService {
 
     final body = request.toJson();
     if (body.isEmpty) {
-      throw Exception('Немає даних для оновлення');
+      throw Exception('Nothing to update');
     }
 
     final response = await http.patch(
@@ -119,10 +119,10 @@ class ItemService {
 
     if (response.statusCode != 200) {
       if (kDebugMode) {
-        print('❌ Помилка оновлення айтема: ${response.statusCode}');
+        print('❌ Failed to update item: ${response.statusCode}');
         print(response.body);
       }
-      throw Exception('Не вдалося оновити айтем');
+      throw Exception('Failed to update item');
     }
 
     return Item.fromJson(jsonDecode(response.body));
@@ -141,7 +141,7 @@ class ItemService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Не вдалося видалити айтем');
+      throw Exception('Failed to delete item');
     }
   }
 }

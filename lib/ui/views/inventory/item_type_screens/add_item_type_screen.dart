@@ -5,6 +5,8 @@ import 'package:pocketeer_mobile/data/models/item_types/item_type_create_request
 import 'package:pocketeer_mobile/data/services/picture_service.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/unit.dart';
+import 'package:pocketeer_mobile/ui/widgets/tag_selector.dart';
+import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 
 class AddItemTypeScreen extends StatefulWidget {
   const AddItemTypeScreen({super.key});
@@ -21,13 +23,15 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
   final _name = TextEditingController();
   final _description = TextEditingController();
   final _shortage = TextEditingController(text: "0");
-  final _defaultQty = TextEditingController(text: "0");
+  final _defaultQty = TextEditingController(text: "1");
 
   Unit _selectedUnit = allUnits.first;
 
   File? _imageFile;
   int? _pictureId;
   bool _uploading = false;
+
+  List<int> _selectedTags = [];
 
   @override
   void dispose() {
@@ -69,7 +73,7 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
       defaultQuantity: double.tryParse(_defaultQty.text),
       shortageThreshold: double.tryParse(_shortage.text),
       pictureId: _pictureId,
-      tagIds: const [],
+      tagIds: _selectedTags,
     );
 
     Navigator.pop(context, req);
@@ -110,6 +114,12 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
                   style: const TextStyle(color: AppColors.pink),
                 ),
 
+                const SizedBox(height: 24),
+
+                TagSelector(
+                  selected: _selectedTags,
+                  onChanged: (v) => _selectedTags = v,
+                ),
                 const SizedBox(height: 24),
 
                 DropdownButtonFormField<Unit>(
@@ -185,22 +195,10 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
 
                 const SizedBox(height: 32),
 
-                ElevatedButton(
+                GradientButton(
+                  label: "Create",
                   onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.pink,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 14,
-                    ),
-                  ),
-                  child: const Text(
-                    "Create",
-                    style: TextStyle(
-                      color: AppColors.primaryBackground,
-                      fontSize: 18,
-                    ),
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ],
             ),

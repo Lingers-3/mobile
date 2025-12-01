@@ -85,7 +85,7 @@ class _ItemsMenuScreenState extends State<ItemsMenuScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Помилка додавання айтема: $e')),
+            SnackBar(content: Text('Failed to add item: $e')),
           );
         }
       }

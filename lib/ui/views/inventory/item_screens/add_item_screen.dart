@@ -3,6 +3,8 @@ import 'package:pocketeer_mobile/data/models/items/item_create_request.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_date_input.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
+import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
+import 'package:pocketeer_mobile/ui/widgets/tag_selector.dart';
 
 class AddItemScreen extends StatefulWidget {
   final int itemTypeId;
@@ -30,6 +32,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _priceController = TextEditingController();
 
   DateTime? _expirationDate;
+  List<int> _selectedTags = [];
 
   @override
   void initState() {
@@ -40,27 +43,24 @@ class _AddItemScreenState extends State<AddItemScreen> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
-      final quantity = double.tryParse(_quantityController.text) ?? 0.0;
-      final price = double.tryParse(_priceController.text);
-      final description = _descriptionController.text.isEmpty
-          ? null
-          : _descriptionController.text;
+    final quantity = double.tryParse(_quantityController.text) ?? 0.0;
+    final price = double.tryParse(_priceController.text);
+    final description =
+        _descriptionController.text.isEmpty ? null : _descriptionController.text;
 
-      final request = ItemCreateRequest(
-        itemTypeId: widget.itemTypeId,
-        description: description,
-        quantity: quantity,
-        expirationDate: _expirationDate,
-        displayMeasurementUnit: widget.baseUnit,
-        purchasePrice: price,
-        tagIds: const [],
-      );
+    final request = ItemCreateRequest(
+      itemTypeId: widget.itemTypeId,
+      description: description,
+      quantity: quantity,
+      expirationDate: _expirationDate,
+      displayMeasurementUnit: widget.baseUnit,
+      purchasePrice: price,
+      tagIds: _selectedTags,
+    );
 
-      Navigator.pop(context, request);
-    }
+    Navigator.pop(context, request);
   }
 
   @override
@@ -78,7 +78,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.primaryBackground,
         title: Text(
-          'Додати айтем до "${widget.itemTypeName}"',
+          'Add item for "${widget.itemTypeName}"',
           style: const TextStyle(color: AppColors.pink, fontSize: 18),
         ),
       ),
@@ -91,18 +91,18 @@ class _AddItemScreenState extends State<AddItemScreen> {
             children: <Widget>[
               CustomTextField(
                 controller: _quantityController,
-                labelText: 'Кількість (${widget.baseUnit})',
-                hintText: 'Введіть кількість',
+                labelText: 'Quantity (${widget.baseUnit})',
+                hintText: 'Enter quantity',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введіть кількість';
+                    return 'Enter quantity';
                   }
                   if (double.tryParse(value) == null ||
                       double.parse(value) <= 0) {
-                    return 'Введіть дійсне число більше нуля';
+                    return 'Quantity must be greater than zero';
                   }
                   return null;
                 },
@@ -111,15 +111,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
               CustomTextField(
                 controller: _descriptionController,
-                labelText: 'Опис (Необов\'язково)',
-                hintText: 'Наприклад: "куплено в АТБ", "домашній"',
+                labelText: 'Description (optional)',
+                hintText: 'e.g. Fresh pack, side shelf',
                 maxLines: 3,
               ),
               const SizedBox(height: 16.0),
 
               CustomDateInput(
                 selectedDate: _expirationDate,
-                label: 'Термін придатності',
+                label: 'Expiration date',
                 onDateSelected: (date) {
                   setState(() {
                     _expirationDate = date;
@@ -130,8 +130,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
               CustomTextField(
                 controller: _priceController,
-                labelText: 'Ціна купівлі (Необов\'язково)',
-                hintText: 'Введіть ціну (наприклад 12.50)',
+                labelText: 'Purchase price (optional)',
+                hintText: 'e.g. 12.50',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -139,30 +139,21 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   if (value != null &&
                       value.isNotEmpty &&
                       double.tryParse(value) == null) {
-                    return 'Введіть дійсне число';
+                    return 'Enter a valid number';
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: 16.0),
+              TagSelector(
+                selected: _selectedTags,
+                onChanged: (v) => setState(() => _selectedTags = v),
+              ),
               const SizedBox(height: 32.0),
 
-              ElevatedButton(
+              GradientButton(
+                label: 'Create item',
                 onPressed: _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.pink,
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Зберегти Айтем',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBackground,
-                  ),
-                ),
               ),
             ],
           ),

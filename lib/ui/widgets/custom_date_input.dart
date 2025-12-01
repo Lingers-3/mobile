@@ -66,7 +66,7 @@ class CustomDateInput extends StatelessWidget {
               children: [
                 Text(
                   selectedDate == null
-                      ? 'Оберіть дату (Необов\'язково)'
+                      ? 'Select date (optional)'
                       : selectedDate!.toString().split(' ')[0],
                   style: TextStyle(
                     color: selectedDate == null

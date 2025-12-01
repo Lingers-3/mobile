@@ -4,8 +4,8 @@ import 'package:pocketeer_mobile/data/models/items/item_update_request.dart';
 import 'package:pocketeer_mobile/data/services/item_service.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_date_input.dart';
-
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
+import 'package:pocketeer_mobile/ui/widgets/tag_selector.dart';
 
 class EditItemScreen extends StatefulWidget {
   final Item item;
@@ -25,6 +25,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
   late TextEditingController _priceCtrl;
 
   DateTime? _expirationDate;
+  List<int> _selectedTags = [];
 
   bool _loading = false;
 
@@ -43,6 +44,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
     );
 
     _expirationDate = widget.item.expirationDate;
+    _selectedTags = [...widget.item.tagIds];
   }
 
   @override
@@ -65,6 +67,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
         purchasePrice: double.tryParse(_priceCtrl.text),
         expirationDate: _expirationDate,
         displayMeasurementUnit: widget.item.displayMeasurementUnit,
+        tagIds: _selectedTags,
       );
 
       final updated = await _service.updateItem(widget.item.id, req);
@@ -76,7 +79,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Помилка оновлення: $e"),
+          content: Text("Update failed: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -107,7 +110,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
                 CustomTextField(
                   controller: _descriptionCtrl,
                   labelText: "Description",
-                  hintText: "Опис (необов’язково)",
+                  hintText: "e.g. Fresh pack, optional",
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
@@ -121,7 +124,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
                   validator: (value) {
                     if (value != null && value.isNotEmpty) {
                       if (double.tryParse(value) == null) {
-                        return "Введіть коректне число";
+                        return "Enter a valid number";
                       }
                     }
                     return null;
@@ -138,7 +141,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
                   validator: (value) {
                     if (value != null && value.isNotEmpty) {
                       if (double.tryParse(value) == null) {
-                        return "Введіть коректну ціну";
+                        return "Enter a valid price";
                       }
                     }
                     return null;
@@ -163,6 +166,12 @@ class _EditItemScreenState extends State<EditItemScreen> {
                       });
                     }
                   },
+                ),
+
+                const SizedBox(height: 16),
+                TagSelector(
+                  selected: _selectedTags,
+                  onChanged: (v) => setState(() => _selectedTags = v),
                 ),
 
                 const SizedBox(height: 32),

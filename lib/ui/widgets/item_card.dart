@@ -76,7 +76,6 @@ class ItemCard extends StatelessWidget {
               ),
             ),
 
-            // ⋮ МЕНЮ
             Align(
               alignment: Alignment.topRight,
               child: PopupMenuButton<String>(
@@ -116,3 +115,4 @@ class ItemCard extends StatelessWidget {
     );
   }
 }
+
