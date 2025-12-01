@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pocketeer_mobile/core/constants/app_constants.dart';
-import 'package:pocketeer_mobile/data/models/item_type.dart';
-import 'package:pocketeer_mobile/data/models/item_type_create_request.dart';
-import 'package:pocketeer_mobile/data/models/item_type_update_request.dart';
+import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
+import 'package:pocketeer_mobile/data/models/item_types/item_type_create_request.dart';
+import 'package:pocketeer_mobile/data/models/item_types/item_type_update_request.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class ItemTypeService {

@@ -1,47 +1,42 @@
-class ItemType {
+class Item {
   final int id;
-  final String name;
   final String? description;
-  final String baseMeasurementUnit;
+  final double quantity;
+  final DateTime? expirationDate;
   final String displayMeasurementUnit;
-  final double? defaultQuantity;
-  final double? shortageThreshold;
-  final int? pictureId;
-  final List<int> itemIds;
+  final double? purchasePrice;
+  final int itemTypeId;
   final List<int> tagIds;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
 
-  ItemType({
+  Item({
     required this.id,
-    required this.name,
     this.description,
-    required this.baseMeasurementUnit,
+    required this.quantity,
+    this.expirationDate,
     required this.displayMeasurementUnit,
-    this.defaultQuantity,
-    this.shortageThreshold,
-    this.pictureId,
-    required this.itemIds,
+    this.purchasePrice,
+    required this.itemTypeId,
     required this.tagIds,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
   });
 
-  factory ItemType.fromJson(Map<String, dynamic> json) {
-    return ItemType(
+  factory Item.fromJson(Map<String, dynamic> json) {
+    return Item(
       id: json['id'] as int,
-      name: json['name'] as String,
       description: json['description'] as String?,
-      baseMeasurementUnit: json['base_measurement_unit'] as String,
+      // Безпечне перетворення числових типів
+      quantity: (json['quantity'] as num).toDouble(),
+      expirationDate: json['expiration_date'] != null
+          ? DateTime.parse(json['expiration_date'] as String)
+          : null,
       displayMeasurementUnit: json['display_measurement_unit'] as String,
-      defaultQuantity: (json['default_quantity'] as num?)?.toDouble(),
-      shortageThreshold: (json['shortage_threshold'] as num?)?.toDouble(),
-      pictureId: json['picture_id'] as int?,
-      itemIds: (json['item_ids'] as List<dynamic>? ?? const [])
-          .map((e) => e as int)
-          .toList(),
+      purchasePrice: (json['purchase_price'] as num?)?.toDouble(),
+      itemTypeId: json['item_type_id'] as int,
       tagIds: (json['tag_ids'] as List<dynamic>? ?? const [])
           .map((e) => e as int)
           .toList(),
@@ -56,14 +51,12 @@ class ItemType {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
       'description': description,
-      'base_measurement_unit': baseMeasurementUnit,
+      'quantity': quantity,
+      'expiration_date': expirationDate?.toIso8601String(),
       'display_measurement_unit': displayMeasurementUnit,
-      'default_quantity': defaultQuantity,
-      'shortage_threshold': shortageThreshold,
-      'picture_id': pictureId,
-      'item_ids': itemIds,
+      'purchase_price': purchasePrice,
+      'item_type_id': itemTypeId,
       'tag_ids': tagIds,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
