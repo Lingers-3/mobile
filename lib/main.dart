@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
+import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
+import 'package:pocketeer_mobile/providers/project_provider.dart';
 
 void main() {
   runApp(
@@ -14,6 +16,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => ItemProvider()),
         ChangeNotifierProvider(create: (_) => TagProvider()),
         ChangeNotifierProvider(create: (_) => ResourceReservationProvider()),
+        ChangeNotifierProvider(create: (_) => ResourceSpecificationProvider()),
+        ChangeNotifierProvider(create: (_) => ProjectProvider()),
       ],
       child: const MyApp(),
     ),

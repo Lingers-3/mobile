@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:pocketeer_mobile/data/models/items/item.dart';
-import 'package:pocketeer_mobile/data/models/resource_reservations/resource_reservation.dart';
+import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
-import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
-import 'package:pocketeer_mobile/ui/widgets/resource_reservation/project_inventory_tile.dart';
-import 'package:pocketeer_mobile/ui/widgets/resource_reservation/resource_reservation_card.dart';
+import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
+import 'package:pocketeer_mobile/ui/views/projects/resource_specification_screen.dart';
+import 'package:pocketeer_mobile/ui/views/projects/select_resource_item_type_screen.dart';
+import 'package:pocketeer_mobile/ui/widgets/resource_specification/resource_specification_card.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -17,279 +18,355 @@ class ProjectsScreen extends StatefulWidget {
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
+  bool _isDescriptionExpanded = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
+      context.read<ItemTypeProvider>().loadItemTypes();
+      context.read<ItemProvider>().loadAllItems();
+      context.read<ResourceReservationProvider>().loadReservations();
     });
-  }
-
-  Future<void> _loadData() async {
-    // Завантажуємо всі необхідні дані
-    await Future.wait([
-      context.read<ResourceReservationProvider>().loadReservations(),
-      context.read<ItemProvider>().loadAllItems(),
-      context.read<ItemTypeProvider>().loadItemTypes(),
-    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Отримуємо дані з провайдерів
-    final reservationProvider = context.watch<ResourceReservationProvider>();
-    final itemProvider = context.watch<ItemProvider>();
-
-    final reservations = reservationProvider.reservations;
-    final allItems = itemProvider.items;
-
-    // --- ЛОГІКА ФІЛЬТРАЦІЇ ---
-    // 1. Отримуємо ID всіх зарезервованих предметів
-    final reservedItemIds = reservations.map((r) => r.itemId).toSet();
-
-    // 2. Фільтруємо інвентар: показуємо тільки ті, що НЕ зарезервовані
-    final availableItems = allItems
-        .where((i) => !reservedItemIds.contains(i.id))
-        .toList();
+    final project = context.watch<ProjectProvider>().project;
+    final specs = context.watch<ResourceSpecificationProvider>().specifications;
+    final dateInfo = _getProjectDateInfo(project);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Управління ресурсами'),
+        title: Text(project.name),
         centerTitle: true,
+        actions: [IconButton(icon: const Icon(Icons.edit), onPressed: () {})],
       ),
-      body: reservationProvider.isLoading || itemProvider.loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // --- СЕКЦІЯ 1: ЗАРЕЗЕРВОВАНІ РЕСУРСИ ---
-                _buildSectionHeader('Зарезервовано', reservations.length),
-                Expanded(
-                  flex: 4, // 40% екрану (приблизно)
-                  child: reservations.isEmpty
-                      ? _buildEmptyState('Немає зарезервованих ресурсів')
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemCount: reservations.length,
-                          itemBuilder: (context, index) {
-                            return ResourceReservationCard(
-                              reservation: reservations[index],
-                            );
-                          },
-                        ),
-                ),
-
-                const Divider(height: 1, thickness: 1),
-
-                // --- СЕКЦІЯ 2: ДОСТУПНИЙ ІНВЕНТАР ---
-                _buildSectionHeader('Інвентар', availableItems.length),
-                Expanded(
-                  flex: 6, // 60% екрану
-                  child: availableItems.isEmpty
-                      ? _buildEmptyState(
-                          'Інвентар порожній або все зарезервовано',
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemCount: availableItems.length,
-                          itemBuilder: (context, index) {
-                            final item = availableItems[index];
-                            return ProjectInventoryTile(
-                              item: item,
-                              onAdd: () =>
-                                  _showAddReservationDialog(context, item),
-                              onTap: () => _showItemDetails(context, item),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, int count) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      color: Colors.grey.shade100,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title.toUpperCase(),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-              letterSpacing: 1.1,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$count',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.grey),
-        ),
-      ),
-    );
-  }
-
-  // Діалог додавання (Резервації)
-  void _showAddReservationDialog(BuildContext context, Item item) {
-    final quantityController = TextEditingController();
-    String? errorText;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Зарезервувати предмет'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Предмет: ${item.description ?? "Без назви"}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Доступно на складі: ${item.quantity} ${item.displayMeasurementUnit}',
-                ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  controller: quantityController,
-                  labelText: 'Необхідна кількість',
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                ),
-                if (errorText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      errorText!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Скасувати'),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'project_add_resource_fab',
+        onPressed: () {
+          final usedTypeIds = specs.map((s) => s.itemTypeId).toList();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SelectResourceItemTypeScreen(
+                excludedItemTypeIds: usedTypeIds,
               ),
-              TextButton(
-                onPressed: () {
-                  final qty = double.tryParse(quantityController.text);
-
-                  if (qty == null || qty <= 0) {
-                    setState(() => errorText = 'Введіть коректну кількість');
-                    return;
-                  }
-
-                  // Тут можна додати валідацію, чи не перевищує резерв загальну кількість
-                  // if (qty > item.quantity) ...
-
-                  context
-                      .read<ResourceReservationProvider>()
-                      .addReservation(item.id, qty)
-                      .then((_) => Navigator.pop(ctx));
-                },
-                child: const Text('Зарезервувати'),
-              ),
-            ],
+            ),
           );
         },
+        label: const Text('Додати ресурс'),
+        icon: const Icon(Icons.add),
       ),
-    );
-  }
-
-  // Діалог перегляду деталей (Read-only)
-  void _showItemDetails(BuildContext context, Item item) {
-    // Отримуємо назву типу для заголовка
-    final typeName = context
-        .read<ItemTypeProvider>()
-        .itemTypes
-        .firstWhere(
-          (t) => t.id == item.itemTypeId,
-          orElse: () =>
-              // Якщо не знайдено (що малоймовірно), створюємо пустий об'єкт або кидаємо error
-              // Для безпеки просто повернемо тип з пустим ім'ям, щоб не крашити
-              throw Exception("Type not found"), // або обробити м'якше
-        )
-        .name;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(item.description ?? typeName),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _detailRow('Тип:', typeName),
-            _detailRow(
-              'Кількість:',
-              '${item.quantity} ${item.displayMeasurementUnit}',
+            // --- HEADER ---
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(
+                            project.status,
+                          ).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _getStatusColor(project.status),
+                          ),
+                        ),
+                        child: Text(
+                          project.status.label,
+                          style: TextStyle(
+                            color: _getStatusColor(project.status),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      if (dateInfo != null)
+                        Text(
+                          dateInfo,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => setState(
+                      () => _isDescriptionExpanded = !_isDescriptionExpanded,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.description,
+                          maxLines: _isDescriptionExpanded ? null : 2,
+                          overflow: _isDescriptionExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        if (!_isDescriptionExpanded &&
+                            project.description.length > 100)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              'Розгорнути...',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            if (item.purchasePrice != null)
-              _detailRow('Ціна:', '${item.purchasePrice}'),
-            _detailRow('Створено:', item.createdAt.toString().split(' ')[0]),
-            if (item.expirationDate != null)
-              _detailRow(
-                'Термін придатності:',
-                item.expirationDate.toString().split(' ')[0],
+
+            const Divider(height: 1),
+
+            // --- ДЗЕРКАЛЬНІ КОЛОНКИ ---
+            Container(
+              color: Colors.grey.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- ЗАПЛАНОВАНО ---
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle('ЗАПЛАНОВАНО', Colors.grey),
+                        const SizedBox(height: 16),
+
+                        // Термін (Optional)
+                        _buildReadOnlyField(
+                          label: 'Термін',
+                          value: _formatDate(project.plannedDeadline) ?? '—',
+                        ),
+                        // Дохід (Optional)
+                        _buildReadOnlyField(
+                          label: 'Дохід',
+                          value: project.plannedIncome != null
+                              ? '${project.plannedIncome} ${project.currency}'
+                              : '—',
+                        ),
+                        // Години (Optional)
+                        _buildReadOnlyField(
+                          label: 'Час виконання',
+                          value: project.plannedHours != null
+                              ? '${project.plannedHours} год'
+                              : '—',
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Container(
+                    width: 1,
+                    height: 160,
+                    color: Colors.grey.shade300,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+
+                  // --- ФАКТИЧНО ---
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle('ФАКТИЧНО', Colors.blue),
+                        const SizedBox(height: 16),
+
+                        // Фактичний термін (Revised deadline)
+                        _buildReadOnlyField(
+                          label: 'Термін',
+                          value: _formatDate(project.actualDeadline) ?? '—',
+                          isBold: true,
+                        ),
+
+                        // Фактичний дохід
+                        _buildReadOnlyField(
+                          label: 'Дохід',
+                          value: '${project.actualIncome} ${project.currency}',
+                          valueColor: project.actualIncome > 0
+                              ? Colors.green
+                              : null,
+                        ),
+
+                        // Фактичні години
+                        _buildReadOnlyField(
+                          label: 'Час виконання',
+                          value: '${project.actualHours} год',
+                          valueColor:
+                              (project.plannedHours != null &&
+                                  project.actualHours > project.plannedHours!)
+                              ? Colors.red
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // --- РЕСУРСИ ---
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                'РЕСУРСИ ПРОЕКТУ',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+
+            if (specs.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Center(child: Text('Ресурси ще не додані')),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: specs.length,
+                itemBuilder: (context, index) {
+                  final spec = specs[index];
+                  return ResourceSpecificationCard(
+                    specification: spec,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ResourceSpecificationScreen(specification: spec),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Закрити'),
+      ),
+    );
+  }
+
+  // --- Helpers ---
+
+  String? _getProjectDateInfo(Project project) {
+    switch (project.status) {
+      case ProjectStatus.planned:
+        return 'Створено ${_formatDateTime(project.createdAt)}';
+      case ProjectStatus.inProgress:
+        return project.startDate != null
+            ? 'Розпочато ${_formatDateTime(project.startDate)}'
+            : 'Створено ${_formatDateTime(project.createdAt)}';
+      case ProjectStatus.completed:
+        return project.endDate != null
+            ? 'Завершено ${_formatDateTime(project.endDate)}'
+            : 'Завершено';
+      case ProjectStatus.cancelled:
+        return project.updatedAt.year != DateTime.now().year
+            ? 'Скасовано' // Якщо дуже давно, можна просто статус
+            : 'Скасовано ${_formatDateTime(project.updatedAt)}';
+    }
+  }
+
+  Widget _buildSectionTitle(String title, Color color) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: color,
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+    bool isBold = false,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: valueColor ?? Colors.black87,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
+  String? _formatDate(DateTime? date) {
+    if (date == null) return null;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    return '$day.$month.$year';
+  }
+
+  String? _formatDateTime(DateTime? date) {
+    if (date == null) return null;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '$day.$month.$year $hour:$minute';
+  }
+
+  Color _getStatusColor(ProjectStatus status) {
+    switch (status) {
+      case ProjectStatus.planned:
+        return Colors.grey;
+      case ProjectStatus.inProgress:
+        return Colors.blue;
+      case ProjectStatus.completed:
+        return Colors.green;
+      case ProjectStatus.cancelled:
+        return Colors.red;
+    }
   }
 }
