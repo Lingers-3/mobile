@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
-import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 
@@ -117,17 +117,12 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
     final provider = context.read<ResourceSpecificationProvider>();
 
     // Створюємо нову специфікацію
-    final newSpec = ResourceSpecification(
-      id: provider.generateId(), // Mock ID gen
-      projectId: widget.projectId,
-      itemTypeId: widget.itemType.id,
-      resourceType: _selectedType,
-      plannedQuantity: qty,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+    provider.addSpecification(
+      widget.projectId,
+      widget.itemType.id,
+      _selectedType,
+      qty,
     );
-
-    provider.addSpecification(newSpec);
 
     // Закриваємо діалог і повертаємо true (успіх)
     Navigator.pop(context, true);

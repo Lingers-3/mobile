@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
-import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/project_inventory_tile.dart';
@@ -14,7 +13,7 @@ import 'package:pocketeer_mobile/ui/widgets/resource_reservation/item_details_di
 
 class ResourceSpecificationScreen extends StatefulWidget {
   final ResourceSpecification specification;
-  final ProjectStatus projectStatus;
+  final ProjectState projectStatus;
   final ItemType itemType;
 
   const ResourceSpecificationScreen({
@@ -134,7 +133,7 @@ class _ResourceSpecificationScreenState
                       totalReserved,
                       unit,
                       Colors.blue,
-                      widget.projectStatus != ProjectStatus.planned,
+                      widget.projectStatus != ProjectState.planned,
                     ),
                     _statColumn(
                       'Витрачено',
@@ -143,7 +142,7 @@ class _ResourceSpecificationScreenState
                       totalUsed > resourceSpecification.plannedQuantity
                           ? Colors.red
                           : Colors.green,
-                      widget.projectStatus != ProjectStatus.planned,
+                      widget.projectStatus != ProjectState.planned,
                     ),
                   ],
                 ),
@@ -209,7 +208,11 @@ class _ResourceSpecificationScreenState
                     ...availableInventory.map(
                       (item) => ProjectInventoryTile(
                         item: item,
-                        onAdd: () => _showAddReservationDialog(context, item),
+                        onAdd: () => _showAddReservationDialog(
+                          context,
+                          widget.specification,
+                          item,
+                        ),
                         onTap: () => _showItemDetails(context, item),
                       ),
                     ),
@@ -287,7 +290,11 @@ class _ResourceSpecificationScreenState
     );
   }
 
-  void _showAddReservationDialog(BuildContext context, Item item) {
+  void _showAddReservationDialog(
+    BuildContext context,
+    ResourceSpecification resourceSpecification,
+    Item item,
+  ) {
     final quantityController = TextEditingController();
     showDialog(
       context: context,
@@ -321,6 +328,7 @@ class _ResourceSpecificationScreenState
               }
 
               context.read<ResourceReservationProvider>().addReservation(
+                resourceSpecification.id,
                 item.id,
                 qty,
               );

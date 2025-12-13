@@ -16,7 +16,7 @@ class ProjectsScreen extends StatelessWidget {
 
     // СЕКЦІЯ: В ПРОЦЕСІ
     final inProgressProjects = allProjects
-        .where((p) => p.status == ProjectStatus.inProgress)
+        .where((p) => p.state == ProjectState.inProgress)
         .toList();
 
     inProgressProjects.sort((a, b) {
@@ -33,7 +33,7 @@ class ProjectsScreen extends StatelessWidget {
 
     // СЕКЦІЯ: ПЛАНУВАННЯ
     final plannedProjects = allProjects
-        .where((p) => p.status == ProjectStatus.planned)
+        .where((p) => p.state == ProjectState.planned)
         .toList();
 
     plannedProjects.sort((a, b) {
@@ -44,8 +44,8 @@ class ProjectsScreen extends StatelessWidget {
     final completedProjects = allProjects
         .where(
           (p) =>
-              p.status == ProjectStatus.completed ||
-              p.status == ProjectStatus.cancelled,
+              p.state == ProjectState.completed ||
+              p.state == ProjectState.cancelled,
         )
         .toList();
 
@@ -125,8 +125,8 @@ class ProjectsScreen extends StatelessWidget {
     String dateLabel = '';
     String dateValue = '';
 
-    switch (project.status) {
-      case ProjectStatus.inProgress:
+    switch (project.state) {
+      case ProjectState.inProgress:
         final deadline = project.actualDeadline ?? project.plannedDeadline;
         if (deadline != null) {
           dateLabel = 'Дедлайн:';
@@ -136,17 +136,17 @@ class ProjectsScreen extends StatelessWidget {
           dateValue = '-';
         }
         break;
-      case ProjectStatus.planned:
+      case ProjectState.planned:
         dateLabel = 'Створено:';
         dateValue = _formatDate(project.createdAt);
         break;
-      case ProjectStatus.completed:
+      case ProjectState.completed:
         dateLabel = 'Завершено:';
         dateValue = project.endDate != null
             ? _formatDate(project.endDate!)
             : '---';
         break;
-      case ProjectStatus.cancelled:
+      case ProjectState.cancelled:
         dateLabel = 'Скасовано:';
         dateValue = _formatDate(project.updatedAt);
         break;
@@ -172,7 +172,7 @@ class ProjectsScreen extends StatelessWidget {
     Color incomeColor = Colors.grey.shade700;
     final actualIncome = project.actualIncome;
 
-    if (project.status == ProjectStatus.planned) {
+    if (project.state == ProjectState.planned) {
       incomeText = project.plannedIncome != null
           ? '${project.plannedIncome!.toStringAsFixed(0)} ${project.currency}'
           : '-';
@@ -263,7 +263,7 @@ class ProjectsScreen extends StatelessWidget {
                       Text(
                         '$dateLabel $dateValue',
                         style: TextStyle(
-                          color: project.status != ProjectStatus.cancelled
+                          color: project.state != ProjectState.cancelled
                               ? Colors.grey.shade500
                               : Colors.red.shade500,
                           fontSize: 12,

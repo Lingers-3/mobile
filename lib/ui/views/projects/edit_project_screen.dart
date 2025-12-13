@@ -27,14 +27,14 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
   late TextEditingController _actualHoursController;
   DateTime? _actualDeadline;
 
-  late ProjectStatus _status;
+  late ProjectState _status;
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
     final p = widget.project;
-    _status = p.status;
+    _status = p.state;
 
     _nameController = TextEditingController(text: p.name);
     _descController = TextEditingController(text: p.description);
@@ -68,8 +68,8 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
   }
 
   // --- ЛОГІКА ДОСТУПУ ДО ПОЛІВ ---
-  bool get _isPlanningEditable => _status == ProjectStatus.planned;
-  bool get _isActualEditable => _status != ProjectStatus.planned;
+  bool get _isPlanningEditable => _status == ProjectState.planned;
+  bool get _isActualEditable => _status != ProjectState.planned;
 
   @override
   Widget build(BuildContext context) {
@@ -100,13 +100,13 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
             const SizedBox(height: 12),
 
             // Статус
-            DropdownButtonFormField<ProjectStatus>(
-              value: _status,
+            DropdownButtonFormField<ProjectState>(
+              initialValue: _status,
               decoration: const InputDecoration(
                 labelText: 'Статус',
                 border: OutlineInputBorder(),
               ),
-              items: ProjectStatus.values.map((s) {
+              items: ProjectState.values.map((s) {
                 return DropdownMenuItem(value: s, child: Text(s.label));
               }).toList(),
               onChanged: (val) {
@@ -272,7 +272,7 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
             ),
             child: Text(
               selectedDate != null
-                  ? '${selectedDate!.day.toString().padLeft(2, '0')}.${selectedDate!.month.toString().padLeft(2, '0')}.${selectedDate!.year}'
+                  ? '${selectedDate.day.toString().padLeft(2, '0')}.${selectedDate.month.toString().padLeft(2, '0')}.${selectedDate.year}'
                   : 'Оберіть дату',
               style: TextStyle(
                 color: selectedDate != null
@@ -294,7 +294,7 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
         description: _descController.text.trim().isEmpty
             ? null
             : _descController.text.trim(),
-        status: _status,
+        state: _status,
 
         createdAt: widget.project.createdAt,
         updatedAt: DateTime.now(), // Оновлюємо дату зміни

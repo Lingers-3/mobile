@@ -1,4 +1,4 @@
-enum ProjectStatus {
+enum ProjectState {
   planned,
   inProgress,
   completed,
@@ -6,13 +6,13 @@ enum ProjectStatus {
 
   String get label {
     switch (this) {
-      case ProjectStatus.planned:
+      case ProjectState.planned:
         return 'Заплановано';
-      case ProjectStatus.inProgress:
+      case ProjectState.inProgress:
         return 'В процесі';
-      case ProjectStatus.completed:
+      case ProjectState.completed:
         return 'Завершено';
-      case ProjectStatus.cancelled:
+      case ProjectState.cancelled:
         return 'Відмінено';
     }
   }
@@ -22,20 +22,17 @@ class Project {
   final int id;
   final String name;
   final String? description;
-  final ProjectStatus status;
+  final ProjectState state;
 
-  // Дати
   final DateTime? plannedDeadline;
   final DateTime? actualDeadline;
   final DateTime? startDate;
   final DateTime? endDate;
 
-  // Фінанси
   final double? plannedIncome;
   final double? actualIncome;
   final String currency;
 
-  // Години
   final double? plannedHours;
   final double? actualHours;
 
@@ -46,7 +43,7 @@ class Project {
     required this.id,
     required this.name,
     required this.description,
-    required this.status,
+    required this.state,
     this.plannedDeadline,
     this.actualDeadline,
     this.startDate,
@@ -64,7 +61,7 @@ class Project {
     int? id,
     String? name,
     String? description,
-    ProjectStatus? status,
+    ProjectState? status,
     DateTime? plannedDeadline,
     DateTime? actualDeadline,
     DateTime? startDate,
@@ -81,7 +78,7 @@ class Project {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
-      status: status ?? this.status,
+      state: status ?? this.state,
       plannedDeadline: plannedDeadline ?? this.plannedDeadline,
       actualDeadline: actualDeadline ?? this.actualDeadline,
       startDate: startDate ?? this.startDate,

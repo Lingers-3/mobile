@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
@@ -109,10 +110,10 @@ class ResourceSpecificationCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: typeColor.withOpacity(0.1),
+                            color: typeColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: typeColor.withOpacity(0.3),
+                              color: typeColor.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -199,7 +200,10 @@ class ResourceSpecificationCard extends StatelessWidget {
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: TextStyle(color: color.withOpacity(0.7), fontSize: 12),
+                  style: TextStyle(
+                    color: color.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

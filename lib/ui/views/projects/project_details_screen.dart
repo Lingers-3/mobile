@@ -115,17 +115,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: _getStatusColor(
-                            project.status,
-                          ).withOpacity(0.1),
+                            project.state,
+                          ).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: _getStatusColor(project.status),
+                            color: _getStatusColor(project.state),
                           ),
                         ),
                         child: Text(
-                          project.status.label,
+                          project.state.label,
                           style: TextStyle(
-                            color: _getStatusColor(project.status),
+                            color: _getStatusColor(project.state),
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -278,6 +278,36 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
             const Divider(height: 1),
 
+            // --- ЕКШЕНИ ---
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                    onPressed: widget.project.state == ProjectState.planned
+                        ? () => _startProject()
+                        : null,
+                    child: const Text('Почати'),
+                  ),
+                  ElevatedButton(
+                    onPressed: widget.project.state == ProjectState.inProgress
+                        ? () => _finishProject()
+                        : null,
+                    child: const Text('Завершити'),
+                  ),
+                  ElevatedButton(
+                    onPressed: widget.project.state == ProjectState.inProgress
+                        ? () => _cancelProject()
+                        : null,
+                    child: const Text('Скасувати'),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
             // --- РЕСУРСИ ---
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
@@ -314,7 +344,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       MaterialPageRoute(
                         builder: (_) => ResourceSpecificationScreen(
                           specification: projectSpecs[index],
-                          projectStatus: project.status,
+                          projectStatus: project.state,
                           itemType: itemType,
                         ),
                       ),
@@ -330,18 +360,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   // --- Helpers (Ті самі, що і раніше) ---
   String? _getProjectDateInfo(Project project) {
-    switch (project.status) {
-      case ProjectStatus.planned:
+    switch (project.state) {
+      case ProjectState.planned:
         return 'Створено ${_formatDateTime(project.createdAt)}';
-      case ProjectStatus.inProgress:
+      case ProjectState.inProgress:
         return project.startDate != null
             ? 'Розпочато ${_formatDateTime(project.startDate)}'
             : 'Створено ${_formatDateTime(project.createdAt)}';
-      case ProjectStatus.completed:
+      case ProjectState.completed:
         return project.endDate != null
             ? 'Завершено ${_formatDateTime(project.endDate)}'
             : 'Завершено';
-      case ProjectStatus.cancelled:
+      case ProjectState.cancelled:
         return 'Скасовано';
     }
   }
@@ -394,16 +424,22 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  Color _getStatusColor(ProjectStatus status) {
+  Color _getStatusColor(ProjectState status) {
     switch (status) {
-      case ProjectStatus.planned:
+      case ProjectState.planned:
         return Colors.grey;
-      case ProjectStatus.inProgress:
+      case ProjectState.inProgress:
         return Colors.blue;
-      case ProjectStatus.completed:
+      case ProjectState.completed:
         return Colors.green;
-      case ProjectStatus.cancelled:
+      case ProjectState.cancelled:
         return Colors.red;
     }
   }
+
+  void _startProject() {}
+
+  void _finishProject() {}
+
+  void _cancelProject() {}
 }

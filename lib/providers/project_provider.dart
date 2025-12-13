@@ -9,7 +9,7 @@ class ProjectProvider extends ChangeNotifier {
       id: 1,
       name: "Будка для собаки",
       description: "Будівництво утепленої будки...",
-      status: ProjectStatus.inProgress,
+      state: ProjectState.inProgress,
       plannedDeadline: DateTime.now().add(const Duration(days: 7)),
       actualDeadline: DateTime.now().add(
         const Duration(days: 3),
@@ -26,7 +26,7 @@ class ProjectProvider extends ChangeNotifier {
       id: 2,
       name: "Ремонт кухні",
       description: "Косметичний ремонт: фарбування стін, заміна плінтусів.",
-      status: ProjectStatus.planned,
+      state: ProjectState.planned,
       plannedDeadline: DateTime.now().add(const Duration(days: 30)),
       plannedIncome: 15000.0,
       plannedHours: 40.0,
@@ -39,7 +39,7 @@ class ProjectProvider extends ChangeNotifier {
       id: 3,
       name: "Аніме це сила!!!",
       description: "Ня.",
-      status: ProjectStatus.cancelled,
+      state: ProjectState.cancelled,
       plannedDeadline: DateTime.now().add(const Duration(days: 30)),
       plannedIncome: 10000.0,
       plannedHours: null,
@@ -53,7 +53,7 @@ class ProjectProvider extends ChangeNotifier {
       id: 4,
       name: "Bruh",
       description: "Bruh.",
-      status: ProjectStatus.completed,
+      state: ProjectState.completed,
       plannedDeadline: DateTime.now().add(const Duration(days: 30)),
       plannedIncome: 10000.0,
       plannedHours: null,
@@ -77,7 +77,7 @@ class ProjectProvider extends ChangeNotifier {
       id: newId,
       name: name,
       description: "", // Порожній опис за замовчуванням
-      status: ProjectStatus.planned, // Початковий статус
+      state: ProjectState.planned, // Початковий статус
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       // Всі інші поля за замовчуванням null або 0.0, як визначено в моделі

@@ -33,16 +33,20 @@ class ResourceReservationProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addReservation(int itemId, double quantity) async {
+  Future<void> addReservation(
+    int resourceSpecificationId,
+    int itemId,
+    double quantity,
+  ) async {
     try {
       final request = ResourceReservationCreateRequest(
         itemId: itemId,
+        resourceSpecificationId: resourceSpecificationId,
         reservedQuantity: quantity,
       );
 
-      final newReservation = await _service.createReservation(request);
+      await _service.createReservation(request);
 
-      _reservations.add(newReservation);
       notifyListeners();
     } catch (e) {
       _error = e.toString();

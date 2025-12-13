@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/resource_reservations/resource_reservation.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
-// import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 
 class ResourceReservationEditDialog extends StatefulWidget {
   final ResourceReservation reservation;
