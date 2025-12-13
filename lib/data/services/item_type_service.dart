@@ -14,16 +14,8 @@ class ItemTypeService {
 
   final AuthService _authService = AuthService();
 
-  String _ensureToken() {
-    final token = _authService.credentials?.accessToken;
-    if (token == null) {
-      throw Exception('User not authenticated');
-    }
-    return token;
-  }
-
   Future<List<ItemType>> getAllItemTypes() async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.get(
       Uri.parse(itemTypesUrl),
@@ -51,7 +43,7 @@ class ItemTypeService {
   }
 
   Future<ItemType> getItemType(int id) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.get(
       Uri.parse('$itemTypesUrl/$id'),
@@ -71,7 +63,7 @@ class ItemTypeService {
   }
 
   Future<ItemType> createItemType(ItemTypeCreateRequest request) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.post(
       Uri.parse(itemTypesUrl),
@@ -100,7 +92,7 @@ class ItemTypeService {
   }
 
   Future<ItemType> updateItemType(int id, ItemTypeUpdateRequest request) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final body = request.toJson();
     if (body.isEmpty) {
@@ -133,7 +125,7 @@ class ItemTypeService {
   }
 
   Future<void> deleteItemType(int id, {bool hard = false}) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final uri = hard
         ? Uri.parse('$itemTypesUrl/$id?force=true')

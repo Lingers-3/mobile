@@ -158,4 +158,12 @@ class AuthService {
 
   Credentials? get credentials => _credentials;
   bool get isAuthenticated => _credentials != null;
+
+  String ensureToken() {
+    final token = _credentials?.accessToken;
+    if (token == null) {
+      throw Exception('Not authorized');
+    }
+    return token;
+  }
 }

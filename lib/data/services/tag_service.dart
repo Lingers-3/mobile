@@ -7,7 +7,7 @@ import 'package:pocketeer_mobile/data/models/tags/tag_update_request.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class TagService {
-  final AuthService _auth = AuthService();
+  final AuthService _authService = AuthService();
 
   String get _baseUrl => "${AppConstants.apiBaseUrl}/api/tags";
 
@@ -21,8 +21,7 @@ class TagService {
   }
 
   Future<List<TagFull>> getAllTags() async {
-    final token = _auth.credentials?.accessToken;
-    if (token == null) throw Exception("Not authorized");
+    final token = _authService.ensureToken();
 
     _log("GET $_baseUrl");
     final response = await http.get(
@@ -40,8 +39,7 @@ class TagService {
   }
 
   Future<TagFull> getTag(int id) async {
-    final token = _auth.credentials?.accessToken;
-    if (token == null) throw Exception("Not authorized");
+    final token = _authService.ensureToken();
 
     _log("GET $_baseUrl/$id");
     final response = await http.get(
@@ -58,8 +56,7 @@ class TagService {
   }
 
   Future<TagFull> createTag(TagCreateRequest req) async {
-    final token = _auth.credentials?.accessToken;
-    if (token == null) throw Exception("Not authorized");
+    final token = _authService.ensureToken();
 
     _log("POST $_baseUrl payload=${jsonEncode(req.toJson())}");
     final response = await http.post(
@@ -79,8 +76,7 @@ class TagService {
   }
 
   Future<TagFull> updateTag(int id, TagUpdateRequest req) async {
-    final token = _auth.credentials?.accessToken;
-    if (token == null) throw Exception("Not authorized");
+    final token = _authService.ensureToken();
 
     _log("PATCH $_baseUrl/$id payload=${jsonEncode(req.toJson())}");
     final response = await http.patch(
@@ -100,8 +96,7 @@ class TagService {
   }
 
   Future<void> deleteTag(int id) async {
-    final token = _auth.credentials?.accessToken;
-    if (token == null) throw Exception("Not authorized");
+    final token = _authService.ensureToken();
 
     _log("DELETE $_baseUrl/$id");
     final response = await http.delete(

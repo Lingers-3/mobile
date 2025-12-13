@@ -13,16 +13,8 @@ class ItemService {
 
   final AuthService _authService = AuthService();
 
-  String _ensureToken() {
-    final token = _authService.credentials?.accessToken;
-    if (token == null) {
-      throw Exception('Not authorized');
-    }
-    return token;
-  }
-
   Future<List<Item>> getAllItems() async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.get(
       Uri.parse(itemsUrl),
@@ -51,7 +43,7 @@ class ItemService {
   }
 
   Future<Item> getItem(int id) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.get(
       Uri.parse('$itemsUrl/$id'),
@@ -66,14 +58,12 @@ class ItemService {
   }
 
   Future<Item> createItem(ItemCreateRequest request) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final requestBody = jsonEncode(request.toJson());
 
     if (kDebugMode) {
-      print(
-        '📤 Sending Item Create Request: $requestBody',
-      );
+      print('📤 Sending Item Create Request: $requestBody');
     }
 
     final response = await http.post(
@@ -101,7 +91,7 @@ class ItemService {
   }
 
   Future<Item> updateItem(int id, ItemUpdateRequest request) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final body = request.toJson();
     if (body.isEmpty) {
@@ -129,7 +119,7 @@ class ItemService {
   }
 
   Future<void> deleteItem(int id, {bool hard = false}) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final uri = hard
         ? Uri.parse('$itemsUrl/$id?force=true')

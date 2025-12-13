@@ -11,16 +11,8 @@ class ProjectService {
   static const String projectsUrl = '${AppConstants.apiBaseUrl}/api/projects';
   final AuthService _authService = AuthService();
 
-  String _ensureToken() {
-    final token = _authService.credentials?.accessToken;
-    if (token == null) {
-      throw Exception('Not authorized');
-    }
-    return token;
-  }
-
   Future<List<Project>> getAllProjects() async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.get(
       Uri.parse(projectsUrl),
@@ -43,7 +35,7 @@ class ProjectService {
   }
 
   Future<Project> getProject(int id) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.get(
       Uri.parse('$projectsUrl/$id'),
@@ -58,7 +50,7 @@ class ProjectService {
   }
 
   Future<Project> createProject(ProjectCreateRequest request) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.post(
       Uri.parse(projectsUrl),
@@ -80,11 +72,8 @@ class ProjectService {
     return Project.fromJson(jsonDecode(response.body));
   }
 
-  Future<Project> updateProject(
-    int id,
-    ProjectUpdateRequest request,
-  ) async {
-    final token = _ensureToken();
+  Future<Project> updateProject(int id, ProjectUpdateRequest request) async {
+    final token = _authService.ensureToken();
 
     final response = await http.patch(
       Uri.parse('$projectsUrl/$id'),
@@ -107,7 +96,7 @@ class ProjectService {
   }
 
   Future<void> deleteProject(int id) async {
-    final token = _ensureToken();
+    final token = _authService.ensureToken();
 
     final response = await http.delete(
       Uri.parse('$projectsUrl/$id'),

@@ -6,13 +6,12 @@ import 'package:pocketeer_mobile/core/constants/app_constants.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class PictureService {
-  final AuthService _auth = AuthService();
+  final AuthService _authService = AuthService();
 
   Future<int> uploadPicture(File file) async {
-    final token = _auth.credentials?.accessToken;
-    if (token == null) throw Exception("Not authorized");
+    final token = _authService.ensureToken();
 
-    final uri = Uri.parse("${AppConstants.apiBaseUrl}/api/pictures/");
+    final uri = Uri.parse("${AppConstants.apiBaseUrl}/api/pictures");
 
     final request = http.MultipartRequest("POST", uri)
       ..headers['Authorization'] = "Bearer $token"
