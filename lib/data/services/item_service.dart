@@ -9,7 +9,7 @@ import 'package:pocketeer_mobile/data/models/items/item_update_request.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class ItemService {
-  static const String itemsUrl = '${AppConstants.apiBaseUrl}/api/items';
+  static const String itemsUrl = '${AppConstants.apiBaseUrl}/items';
 
   final AuthService _authService = AuthService();
 

@@ -8,8 +8,12 @@ import 'package:pocketeer_mobile/data/models/projects/project_update_request.dar
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class ProjectService {
-  static const String projectsUrl = '${AppConstants.apiBaseUrl}/api/projects';
-  final AuthService _authService = AuthService();
+  static const String projectsUrl = '${AppConstants.apiBaseUrl}/projects';
+  final AuthService _authService;
+
+    ProjectService({AuthService? authService})
+    : _authService = authService ?? AuthService();
+
 
   Future<List<Project>> getAllProjects() async {
     final token = _authService.ensureToken();
@@ -106,5 +110,27 @@ class ProjectService {
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to delete project');
     }
+  }
+
+  Future<Project> startProject(int id) async {
+    final token = _authService.ensureToken();
+
+    final response = await http.post(
+      Uri.parse('$projectsUrl/$id/start'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'id': id}),
+    );
+    throw UnimplementedError();
+  }
+
+  Future<Project> finishProject(int id) async {
+    throw UnimplementedError();
+  }
+
+  Future<Project> cancelProject(int id) async {
+    throw UnimplementedError();
   }
 }

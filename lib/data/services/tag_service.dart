@@ -9,7 +9,7 @@ import 'package:pocketeer_mobile/data/services/auth_service.dart';
 class TagService {
   final AuthService _authService = AuthService();
 
-  String get _baseUrl => "${AppConstants.apiBaseUrl}/api/tags";
+  String get _baseUrl => "${AppConstants.apiBaseUrl}/tags";
 
   Map<String, String> _headers(String token) => {
     "Content-Type": "application/json",

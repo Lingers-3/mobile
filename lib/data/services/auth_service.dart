@@ -26,7 +26,7 @@ class AuthService {
       _credentials = await auth0
           .webAuthentication(scheme: 'pocketeer')
           .login(
-            audience: AppConstants.apiBaseUrl,
+            audience: AppConstants.baseUrl,
             scopes: {'openid', 'profile', 'email', 'offline_access'},
             redirectUrl:
                 'pocketeer://dev-sdqqsvfi11hhx02d.us.auth0.com/android/com.example.pocketeer_mobile/callback',
@@ -37,7 +37,7 @@ class AuthService {
       }
 
       final response = await http.get(
-        Uri.parse('${AppConstants.apiBaseUrl}/api/users/me'),
+        Uri.parse('${AppConstants.apiBaseUrl}/users/me'),
         headers: {'Authorization': 'Bearer ${_credentials!.accessToken}'},
       );
 
@@ -90,7 +90,7 @@ class AuthService {
 
     try {
       final response = await http.delete(
-        Uri.parse('${AppConstants.apiBaseUrl}/api/users/me'),
+        Uri.parse('${AppConstants.apiBaseUrl}/users/me'),
         headers: {
           'Authorization': 'Bearer ${_credentials!.accessToken}',
           'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ class AuthService {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.apiBaseUrl}/api/auth/change-password'),
+        Uri.parse('${AppConstants.apiBaseUrl}/auth/change-password'),
         headers: {
           'Authorization': 'Bearer ${_credentials!.accessToken}',
           'Content-Type': 'application/json',

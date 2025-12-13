@@ -7,12 +7,15 @@ import 'package:pocketeer_mobile/data/models/picture.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class PictureService {
-  final AuthService _authService = AuthService();
+  final AuthService _authService;
+
+  PictureService({AuthService? authService})
+    : _authService = authService ?? AuthService();
 
   Future<Picture> createPicture(File file) async {
     final token = _authService.ensureToken();
 
-    final uri = Uri.parse("${AppConstants.apiBaseUrl}/api/pictures");
+    final uri = Uri.parse("${AppConstants.apiBaseUrl}/pictures");
 
     final request = http.MultipartRequest("POST", uri)
       ..headers['Authorization'] = "Bearer $token"
@@ -31,9 +34,9 @@ class PictureService {
   Future<Picture> getPicture(int id) async {
     final token = _authService.ensureToken();
 
-    final uri = Uri.parse("${AppConstants.apiBaseUrl}/api/pictures/$id");
+    final uri = Uri.parse("${AppConstants.apiBaseUrl}/pictures/$id");
 
-    final response = await http.post(
+    final response = await http.get(
       uri,
       headers: {'Authorization': 'Bearer $token'},
     );

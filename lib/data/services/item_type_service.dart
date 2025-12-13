@@ -10,7 +10,7 @@ import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class ItemTypeService {
   static const String itemTypesUrl =
-      '${AppConstants.apiBaseUrl}/api/item-types';
+      '${AppConstants.apiBaseUrl}/item-types';
 
   final AuthService _authService = AuthService();
 
