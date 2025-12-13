@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_create_request.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_update_actual_request.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_update_plan_request.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_update_request.dart';
-import 'package:pocketeer_mobile/data/services/mock/mock_project_service.dart';
 import 'package:pocketeer_mobile/data/services/project_service.dart';
 
 class ProjectProvider extends ChangeNotifier {
-  // final ProjectService _projectService = ProjectService();
-  final MockProjectService _projectService = MockProjectService();
+  final ProjectService _projectService = ProjectService();
 
   List<Project> _projects = [];
   bool _isLoading = false;
@@ -51,18 +51,78 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateProject(Project updatedProject) async {
+  Future<void> updateProjectPlan(
+    int id,
+    DateTime? plannedDeadline,
+    double? plannedIncome,
+    double? plannedWorkTime,
+  ) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final index = _projects.indexWhere((p) => p.id == updatedProject.id);
+      final index = _projects.indexWhere((p) => p.id == id);
       if (index != -1) {
-        final request = ProjectUpdateRequest.fromProject(updatedProject);
-        final result = await _projectService.updateProject(
-          updatedProject.id,
-          request,
+        final request = ProjectUpdatePlanRequest(
+          plannedDeadline: plannedDeadline,
+          plannedIncome: plannedIncome,
+          plannedWorkTime: plannedWorkTime,
         );
+        final result = await _projectService.updateProjectPlan(id, request);
+        _projects[index] = result;
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateProjectActual(
+    int id,
+    DateTime? actualDeadline,
+    double? actualIncome,
+    double? actualWorkTime,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final index = _projects.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        final request = ProjectUpdateActualRequest(
+          actualDeadline: actualDeadline,
+          actualIncome: actualIncome,
+          actualWorkTime: actualWorkTime,
+        );
+        final result = await _projectService.updateProjectActual(id, request);
+        _projects[index] = result;
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateProjectInfo(
+    int id,
+    String name,
+    String? description,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final index = _projects.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        final request = ProjectUpdateRequest(
+          name: name,
+          description: description,
+        );
+        final result = await _projectService.updateProjectInfo(id, request);
         _projects[index] = result;
       }
     } catch (e) {
@@ -88,48 +148,54 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
+  // NOTE(saloway): may require to fetch resource reservations afterwards
   Future<void> startProject(int id) async {
     try {
-      // Отримуємо оновлений проект від сервісу
-      final updatedProject = await _projectService.startProject(id);
+      final result = await _projectService.startProject(id);
 
-      // Знаходимо і замінюємо його в локальному списку
       final index = _projects.indexWhere((p) => p.id == id);
       if (index != -1) {
-        _projects[index] = updatedProject;
-        notifyListeners(); // Тепер UI побачить зміни
+        _projects[index] = result;
       }
     } catch (e) {
-      // Обробка помилок
-      print(e);
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
+  // NOTE(saloway): may require to fetch items afterwards
   Future<void> finishProject(int id) async {
     try {
-      final updatedProject = await _projectService.finishProject(id);
+      final result = await _projectService.finishProject(id);
 
       final index = _projects.indexWhere((p) => p.id == id);
       if (index != -1) {
-        _projects[index] = updatedProject;
-        notifyListeners();
+        _projects[index] = result;
       }
     } catch (e) {
-      print(e);
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
+  // NOTE(saloway): may require to fetch resource reservations afterwards
   Future<void> cancelProject(int id) async {
     try {
-      final updatedProject = await _projectService.cancelProject(id);
+      final result = await _projectService.cancelProject(id);
 
       final index = _projects.indexWhere((p) => p.id == id);
       if (index != -1) {
-        _projects[index] = updatedProject;
-        notifyListeners();
+        _projects[index] = result;
       }
     } catch (e) {
-      print(e);
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }
