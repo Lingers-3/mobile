@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
+import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
@@ -43,7 +44,13 @@ class _ResourceSpecificationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final resourceSpecification = widget.specification;
+    final resourceSpecification = context
+        .watch<ResourceSpecificationProvider>()
+        .specifications
+        .firstWhere(
+          (rs) => rs.id == widget.specification.id,
+          orElse: () => widget.specification,
+        );
 
     final typeName = widget.itemType.name;
     final unit = widget.itemType.displayMeasurementUnit;
@@ -61,7 +68,11 @@ class _ResourceSpecificationScreenState
 
     // Всі резервації, які посилаються на предмети цього типу
     final relevantReservations = reservationProvider.reservations
-        .where((r) => itemsIdsOfThisType.contains(r.itemId))
+        .where(
+          (r) =>
+              itemsIdsOfThisType.contains(r.itemId) &&
+              r.resourceSpecificationId == resourceSpecification.id,
+        )
         .toList();
 
     // ID предметів, які вже зарезервовані (в межах специфікації цього проекту)
@@ -211,7 +222,7 @@ class _ResourceSpecificationScreenState
                         item: item,
                         onAdd: () => _showAddReservationDialog(
                           context,
-                          widget.specification,
+                          resourceSpecification,
                           item,
                         ),
                         onTap: () => _showItemDetails(context, item),

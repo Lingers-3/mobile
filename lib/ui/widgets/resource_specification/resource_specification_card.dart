@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
+import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
@@ -20,6 +21,13 @@ class ResourceSpecificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resourceSpecification = context
+        .watch<ResourceSpecificationProvider>()
+        .specifications
+        .firstWhere(
+          (rs) => rs.id == specification.id,
+          orElse: () => specification,
+        );
     final String unit = itemType.displayMeasurementUnit;
     final String name = itemType.name;
 
@@ -39,7 +47,9 @@ class ResourceSpecificationCard extends StatelessWidget {
     // Крок Б: Слухаємо провайдер резервацій і фільтруємо
     final reservationProvider = context.watch<ResourceReservationProvider>();
     final relevantReservations = reservationProvider.reservations.where(
-      (r) => itemIdsOfType.contains(r.itemId),
+      (r) =>
+          itemIdsOfType.contains(r.itemId) &&
+          r.resourceSpecificationId == resourceSpecification.id,
     );
 
     // Крок В: Сумуємо
