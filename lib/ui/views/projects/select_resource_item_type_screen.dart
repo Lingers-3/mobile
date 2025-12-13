@@ -8,10 +8,12 @@ import 'package:pocketeer_mobile/ui/widgets/resource_specification/add_specifica
 class SelectResourceItemTypeScreen extends StatelessWidget {
   // Додаємо параметр для фільтрації
   final List<int> excludedItemTypeIds;
+  final int projectId;
 
   const SelectResourceItemTypeScreen({
     super.key,
     this.excludedItemTypeIds = const [],
+    required this.projectId,
   });
 
   @override
@@ -61,7 +63,10 @@ class SelectResourceItemTypeScreen extends StatelessWidget {
                   onTap: () async {
                     final result = await showDialog(
                       context: context,
-                      builder: (_) => AddSpecificationDialog(itemType: type),
+                      builder: (_) => AddSpecificationDialog(
+                        itemType: type,
+                        projectId: projectId,
+                      ),
                     );
 
                     if (result == true && context.mounted) {

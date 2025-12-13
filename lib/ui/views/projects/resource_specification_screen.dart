@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
+import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
@@ -8,11 +10,19 @@ import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/project_inventory_tile.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/resource_reservation_card.dart';
+import 'package:pocketeer_mobile/ui/widgets/resource_reservation/item_details_dialog.dart';
 
 class ResourceSpecificationScreen extends StatefulWidget {
   final ResourceSpecification specification;
+  final ProjectStatus projectStatus;
+  final ItemType itemType;
 
-  const ResourceSpecificationScreen({super.key, required this.specification});
+  const ResourceSpecificationScreen({
+    super.key,
+    required this.specification,
+    required this.projectStatus,
+    required this.itemType,
+  });
 
   @override
   State<ResourceSpecificationScreen> createState() =>
@@ -24,7 +34,7 @@ class _ResourceSpecificationScreenState
   @override
   void initState() {
     super.initState();
-    // Оновлюємо дані при вході
+    // Update data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ResourceReservationProvider>().loadReservations();
       context.read<ItemProvider>().loadAllItems();
@@ -33,19 +43,10 @@ class _ResourceSpecificationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final spec = widget.specification;
+    final resourceSpecification = widget.specification;
 
-    // 1. Отримуємо назву типу предмету та одиницю виміру
-    final itemType = context.select<ItemTypeProvider, dynamic>((p) {
-      try {
-        return p.itemTypes.firstWhere((t) => t.id == spec.itemTypeId);
-      } catch (e) {
-        return null;
-      }
-    });
-
-    final typeName = itemType?.name ?? 'Невідомий тип';
-    final unit = itemType?.displayMeasurementUnit ?? '';
+    final typeName = widget.itemType.name;
+    final unit = widget.itemType.displayMeasurementUnit;
 
     // 2. Отримуємо дані з провайдерів
     final reservationProvider = context.watch<ResourceReservationProvider>();
@@ -53,8 +54,9 @@ class _ResourceSpecificationScreenState
 
     // 3. ФІЛЬТРАЦІЯ: Нам потрібні тільки дані, що стосуються itemTypeId цієї специфікації
 
-    // Всі предмети цього типу
-    final itemsOfThisType = itemProvider.getItemsByType(spec.itemTypeId);
+    final itemsOfThisType = itemProvider.getItemsByType(
+      resourceSpecification.itemTypeId,
+    );
     final itemsIdsOfThisType = itemsOfThisType.map((i) => i.id).toSet();
 
     // Всі резервації, які посилаються на предмети цього типу
@@ -62,7 +64,7 @@ class _ResourceSpecificationScreenState
         .where((r) => itemsIdsOfThisType.contains(r.itemId))
         .toList();
 
-    // ID предметів, які вже зарезервовані (в межах цього проекту/специфікації)
+    // ID предметів, які вже зарезервовані (в межах специфікації цього проекту)
     // Увага: тут спрощення. В реальності треба перевіряти, чи зарезервований предмет саме під цю специфікацію.
     // Поки що вважаємо, що всі резервації цього типу належать сюди (для демо).
     final reservedItemIds = relevantReservations.map((r) => r.itemId).toSet();
@@ -73,6 +75,7 @@ class _ResourceSpecificationScreenState
         .toList();
 
     // 4. ПІДРАХУНОК СТАТИСТИКИ
+    // NOTE(saloway): очікується від бекенду через провайдер специфікацій
     final totalReserved = relevantReservations.fold(
       0.0,
       (sum, r) => sum + r.reservedQuantity,
@@ -96,6 +99,7 @@ class _ResourceSpecificationScreenState
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // TYPE NAME
                     Expanded(
                       child: Text(
                         typeName,
@@ -105,36 +109,41 @@ class _ResourceSpecificationScreenState
                         ),
                       ),
                     ),
+                    // SPECIFICATION RESOURCE TYPE
                     Chip(
-                      label: Text(spec.resourceTypeLabel),
+                      label: Text(resourceSpecification.resourceTypeLabel),
                       backgroundColor: Colors.blue.shade50,
                       labelStyle: const TextStyle(color: Colors.blue),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
+                // SPECIFICATION STATS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildStatColumn(
+                    _statColumn(
                       'Заплановано',
-                      spec.plannedQuantity,
+                      resourceSpecification.plannedQuantity,
                       unit,
                       Colors.black,
+                      true,
                     ),
-                    _buildStatColumn(
+                    _statColumn(
                       'Зарезервовано',
                       totalReserved,
                       unit,
                       Colors.blue,
+                      widget.projectStatus != ProjectStatus.planned,
                     ),
-                    _buildStatColumn(
+                    _statColumn(
                       'Витрачено',
                       totalUsed,
                       unit,
-                      totalUsed > spec.plannedQuantity
+                      totalUsed > resourceSpecification.plannedQuantity
                           ? Colors.red
                           : Colors.green,
+                      widget.projectStatus != ProjectStatus.planned,
                     ),
                   ],
                 ),
@@ -143,8 +152,10 @@ class _ResourceSpecificationScreenState
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: spec.plannedQuantity > 0
-                        ? (totalReserved / spec.plannedQuantity).clamp(0.0, 1.0)
+                    value: resourceSpecification.plannedQuantity > 0
+                        ? (totalReserved /
+                                  resourceSpecification.plannedQuantity)
+                              .clamp(0.0, 1.0)
                         : 0,
                     backgroundColor: Colors.grey.shade200,
                     color: Colors.blue,
@@ -162,7 +173,7 @@ class _ResourceSpecificationScreenState
               child: Column(
                 children: [
                   // Секція Резервацій
-                  _buildSectionHeader(
+                  _sectionHeader(
                     'Зарезервовані ресурси',
                     relevantReservations.length,
                   ),
@@ -182,7 +193,7 @@ class _ResourceSpecificationScreenState
                   const SizedBox(height: 16),
 
                   // Секція Інвентарю
-                  _buildSectionHeader(
+                  _sectionHeader(
                     'Доступно в інвентарі',
                     availableInventory.length,
                   ),
@@ -199,7 +210,7 @@ class _ResourceSpecificationScreenState
                       (item) => ProjectInventoryTile(
                         item: item,
                         onAdd: () => _showAddReservationDialog(context, item),
-                        onTap: () {}, // Тут можна відкрити деталі предмету
+                        onTap: () => _showItemDetails(context, item),
                       ),
                     ),
 
@@ -213,18 +224,19 @@ class _ResourceSpecificationScreenState
     );
   }
 
-  Widget _buildStatColumn(
+  Widget _statColumn(
     String label,
     double value,
     String unit,
     Color color,
+    bool active,
   ) {
     return Column(
       children: [
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 4),
         Text(
-          '${value.toStringAsFixed(1)} $unit',
+          active ? '${value.toStringAsFixed(1)} $unit' : '—',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -235,12 +247,13 @@ class _ResourceSpecificationScreenState
     );
   }
 
-  Widget _buildSectionHeader(String title, int count) {
+  Widget _sectionHeader(String title, int count) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       color: Colors.grey.shade50,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             title.toUpperCase(),
@@ -267,6 +280,13 @@ class _ResourceSpecificationScreenState
     );
   }
 
+  void _showItemDetails(BuildContext context, Item item) {
+    showDialog(
+      context: context,
+      builder: (_) => ItemDetailsDialog(item: item),
+    );
+  }
+
   void _showAddReservationDialog(BuildContext context, Item item) {
     final quantityController = TextEditingController();
     showDialog(
@@ -276,7 +296,7 @@ class _ResourceSpecificationScreenState
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Скільки взяти з "${item.description}"?'),
+            Text('Скільки взяти з "${widget.itemType.name}"?'),
             CustomTextField(
               controller: quantityController,
               labelText: 'Кількість',
@@ -292,13 +312,19 @@ class _ResourceSpecificationScreenState
           TextButton(
             onPressed: () {
               final qty = double.tryParse(quantityController.text);
-              if (qty != null) {
-                context.read<ResourceReservationProvider>().addReservation(
-                  item.id,
-                  qty,
+
+              if (qty == null || qty <= 0) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('Введіть число більше нуля')),
                 );
-                Navigator.pop(ctx);
+                return;
               }
+
+              context.read<ResourceReservationProvider>().addReservation(
+                item.id,
+                qty,
+              );
+              Navigator.pop(ctx);
             },
             child: const Text('Додати'),
           ),

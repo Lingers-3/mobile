@@ -1,372 +1,365 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
-import 'package:pocketeer_mobile/providers/item_provider.dart';
-import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
-import 'package:pocketeer_mobile/ui/views/projects/resource_specification_screen.dart';
-import 'package:pocketeer_mobile/ui/views/projects/select_resource_item_type_screen.dart';
-import 'package:pocketeer_mobile/ui/widgets/resource_specification/resource_specification_card.dart';
+import 'package:pocketeer_mobile/ui/views/projects/project_details_screen.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 
-class ProjectsScreen extends StatefulWidget {
+class ProjectsScreen extends StatelessWidget {
   const ProjectsScreen({super.key});
 
   @override
-  State<ProjectsScreen> createState() => _ProjectsScreenState();
-}
-
-class _ProjectsScreenState extends State<ProjectsScreen> {
-  bool _isDescriptionExpanded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ItemTypeProvider>().loadItemTypes();
-      context.read<ItemProvider>().loadAllItems();
-      context.read<ResourceReservationProvider>().loadReservations();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final project = context.watch<ProjectProvider>().project;
-    final specs = context.watch<ResourceSpecificationProvider>().specifications;
-    final dateInfo = _getProjectDateInfo(project);
+    final allProjects = context.watch<ProjectProvider>().projects;
+
+    // --- 1. ФІЛЬТРАЦІЯ ТА СОРТУВАННЯ ---
+
+    // СЕКЦІЯ: В ПРОЦЕСІ
+    final inProgressProjects = allProjects
+        .where((p) => p.status == ProjectStatus.inProgress)
+        .toList();
+
+    inProgressProjects.sort((a, b) {
+      // Визначаємо ефективний дедлайн (пріоритет у фактичного, потім запланований)
+      final dateA = a.actualDeadline ?? a.plannedDeadline;
+      final dateB = b.actualDeadline ?? b.plannedDeadline;
+
+      if (dateA == null && dateB == null) return 0;
+      if (dateA == null) return 1; // Без дедлайну - вниз
+      if (dateB == null) return -1;
+
+      return dateA.compareTo(dateB); // Від найближчого до найдальшого
+    });
+
+    // СЕКЦІЯ: ПЛАНУВАННЯ
+    final plannedProjects = allProjects
+        .where((p) => p.status == ProjectStatus.planned)
+        .toList();
+
+    plannedProjects.sort((a, b) {
+      return b.createdAt.compareTo(a.createdAt); // Спочатку нові
+    });
+
+    // СЕКЦІЯ: ЗАВЕРШЕНІ (Completed + Cancelled)
+    final completedProjects = allProjects
+        .where(
+          (p) =>
+              p.status == ProjectStatus.completed ||
+              p.status == ProjectStatus.cancelled,
+        )
+        .toList();
+
+    completedProjects.sort((a, b) {
+      // Для завершених беремо endDate, для скасованих - updatedAt (як дату скасування)
+      final dateA = a.endDate ?? a.updatedAt;
+      final dateB = b.endDate ?? b.updatedAt;
+      return dateB.compareTo(dateA); // Спочатку нещодавно завершені
+    });
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(project.name),
-        centerTitle: true,
-        actions: [IconButton(icon: const Icon(Icons.edit), onPressed: () {})],
+      appBar: AppBar(title: const Text('Мої Проекти'), centerTitle: true),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_create_project',
+        onPressed: () => _showCreateProjectDialog(context),
+        child: const Icon(Icons.add),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'project_add_resource_fab',
-        onPressed: () {
-          final usedTypeIds = specs.map((s) => s.itemTypeId).toList();
+      body: allProjects.isEmpty
+          ? _buildEmptyState()
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 80),
+              children: [
+                if (inProgressProjects.isNotEmpty) ...[
+                  _buildSectionHeader('В ПРОЦЕСІ', Colors.blue),
+                  ...inProgressProjects.map(
+                    (p) => _buildProjectCard(context, p),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                if (plannedProjects.isNotEmpty) ...[
+                  _buildSectionHeader('ПЛАНУВАННЯ', Colors.grey),
+                  ...plannedProjects.map((p) => _buildProjectCard(context, p)),
+                  const SizedBox(height: 16),
+                ],
+
+                if (completedProjects.isNotEmpty) ...[
+                  _buildSectionHeader('ЗАВЕРШЕНІ', Colors.green),
+                  ...completedProjects.map(
+                    (p) => _buildProjectCard(context, p),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 16,
+            color: color,
+            margin: const EdgeInsets.only(right: 8),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              fontSize: 13,
+            ),
+          ),
+          const Expanded(child: Divider(indent: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectCard(BuildContext context, Project project) {
+    // Вибираємо, яку дату показувати на картці залежно від статусу
+    String dateLabel = '';
+    String dateValue = '';
+
+    switch (project.status) {
+      case ProjectStatus.inProgress:
+        final deadline = project.actualDeadline ?? project.plannedDeadline;
+        if (deadline != null) {
+          dateLabel = 'Дедлайн:';
+          dateValue = _formatDate(deadline);
+        } else {
+          dateLabel = 'Дедлайн:';
+          dateValue = '-';
+        }
+        break;
+      case ProjectStatus.planned:
+        dateLabel = 'Створено:';
+        dateValue = _formatDate(project.createdAt);
+        break;
+      case ProjectStatus.completed:
+        dateLabel = 'Завершено:';
+        dateValue = project.endDate != null
+            ? _formatDate(project.endDate!)
+            : '---';
+        break;
+      case ProjectStatus.cancelled:
+        dateLabel = 'Скасовано:';
+        dateValue = _formatDate(project.updatedAt);
+        break;
+    }
+
+    String timeText = '-';
+    Color timeColor = Colors.grey.shade700;
+    final plannedHours = project.plannedHours ?? 0;
+    final actualHours = project.actualHours ?? 0;
+
+    if (plannedHours != 0 && actualHours != 0) {
+      final actual = actualHours
+          .toStringAsFixed(1)
+          .replaceAll(RegExp(r'\.0$'), '');
+      final planned = plannedHours
+          .toStringAsFixed(1)
+          .replaceAll(RegExp(r'\.0$'), '');
+
+      timeText = '$actual/$planned год';
+    }
+
+    String incomeText = '-';
+    Color incomeColor = Colors.grey.shade700;
+    final actualIncome = project.actualIncome;
+
+    if (project.status == ProjectStatus.planned) {
+      incomeText = project.plannedIncome != null
+          ? '${project.plannedIncome!.toStringAsFixed(0)} ${project.currency}'
+          : '-';
+    } else if (actualIncome != null) {
+      incomeText = '${actualIncome.toStringAsFixed(0)} ${project.currency}';
+      if (actualIncome > 0) incomeColor = Colors.green[700]!;
+    }
+
+    final desc = project.description ?? '';
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => SelectResourceItemTypeScreen(
-                excludedItemTypeIds: usedTypeIds,
-              ),
+              builder: (_) => ProjectDetailsScreen(project: project),
             ),
           );
         },
-        label: const Text('Додати ресурс'),
-        icon: const Icon(Icons.add),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- HEADER ---
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            project.status,
-                          ).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getStatusColor(project.status),
-                          ),
-                        ),
-                        child: Text(
-                          project.status.label,
-                          style: TextStyle(
-                            color: _getStatusColor(project.status),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      if (dateInfo != null)
-                        Text(
-                          dateInfo,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  InkWell(
-                    onTap: () => setState(
-                      () => _isDescriptionExpanded = !_isDescriptionExpanded,
-                    ),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          project.description,
-                          maxLines: _isDescriptionExpanded ? null : 2,
-                          overflow: _isDescriptionExpanded
-                              ? TextOverflow.visible
-                              : TextOverflow.ellipsis,
+                          project.name,
                           style: const TextStyle(
                             fontSize: 16,
-                            height: 1.5,
-                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (!_isDescriptionExpanded &&
-                            project.description.length > 100)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              'Розгорнути...',
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
+
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, size: 16, color: timeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        timeText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: timeColor,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ),
-
-            const Divider(height: 1),
-
-            // --- ДЗЕРКАЛЬНІ КОЛОНКИ ---
-            Container(
-              color: Colors.grey.shade50,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 6),
+              Text(
+                desc.isNotEmpty ? desc : 'Немає опису',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // --- ЗАПЛАНОВАНО ---
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle('ЗАПЛАНОВАНО', Colors.grey),
-                        const SizedBox(height: 16),
-
-                        // Термін (Optional)
-                        _buildReadOnlyField(
-                          label: 'Термін',
-                          value: _formatDate(project.plannedDeadline) ?? '—',
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$dateLabel $dateValue',
+                        style: TextStyle(
+                          color: project.status != ProjectStatus.cancelled
+                              ? Colors.grey.shade500
+                              : Colors.red.shade500,
+                          fontSize: 12,
                         ),
-                        // Дохід (Optional)
-                        _buildReadOnlyField(
-                          label: 'Дохід',
-                          value: project.plannedIncome != null
-                              ? '${project.plannedIncome} ${project.currency}'
-                              : '—',
-                        ),
-                        // Години (Optional)
-                        _buildReadOnlyField(
-                          label: 'Час виконання',
-                          value: project.plannedHours != null
-                              ? '${project.plannedHours} год'
-                              : '—',
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-
-                  Container(
-                    width: 1,
-                    height: 160,
-                    color: Colors.grey.shade300,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-
-                  // --- ФАКТИЧНО ---
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle('ФАКТИЧНО', Colors.blue),
-                        const SizedBox(height: 16),
-
-                        // Фактичний термін (Revised deadline)
-                        _buildReadOnlyField(
-                          label: 'Термін',
-                          value: _formatDate(project.actualDeadline) ?? '—',
-                          isBold: true,
+                  Row(
+                    children: [
+                      Text(
+                        incomeText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: incomeColor,
                         ),
-
-                        // Фактичний дохід
-                        _buildReadOnlyField(
-                          label: 'Дохід',
-                          value: '${project.actualIncome} ${project.currency}',
-                          valueColor: project.actualIncome > 0
-                              ? Colors.green
-                              : null,
-                        ),
-
-                        // Фактичні години
-                        _buildReadOnlyField(
-                          label: 'Час виконання',
-                          value: '${project.actualHours} год',
-                          valueColor:
-                              (project.plannedHours != null &&
-                                  project.actualHours > project.plannedHours!)
-                              ? Colors.red
-                              : null,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 16,
+                        color: incomeColor,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-
-            const Divider(height: 1),
-
-            // --- РЕСУРСИ ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-              child: Text(
-                'РЕСУРСИ ПРОЕКТУ',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-
-            if (specs.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Center(child: Text('Ресурси ще не додані')),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: specs.length,
-                itemBuilder: (context, index) {
-                  final spec = specs[index];
-                  return ResourceSpecificationCard(
-                    specification: spec,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ResourceSpecificationScreen(specification: spec),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // --- Helpers ---
-
-  String? _getProjectDateInfo(Project project) {
-    switch (project.status) {
-      case ProjectStatus.planned:
-        return 'Створено ${_formatDateTime(project.createdAt)}';
-      case ProjectStatus.inProgress:
-        return project.startDate != null
-            ? 'Розпочато ${_formatDateTime(project.startDate)}'
-            : 'Створено ${_formatDateTime(project.createdAt)}';
-      case ProjectStatus.completed:
-        return project.endDate != null
-            ? 'Завершено ${_formatDateTime(project.endDate)}'
-            : 'Завершено';
-      case ProjectStatus.cancelled:
-        return project.updatedAt.year != DateTime.now().year
-            ? 'Скасовано' // Якщо дуже давно, можна просто статус
-            : 'Скасовано ${_formatDateTime(project.updatedAt)}';
-    }
-  }
-
-  Widget _buildSectionTitle(String title, Color color) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 12,
-        letterSpacing: 1.0,
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyField({
-    required String label,
-    required String value,
-    bool isBold = false,
-    Color? valueColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+  Widget _buildEmptyState() {
+    return const Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          const SizedBox(height: 4),
+          Icon(Icons.assignment_add, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
           Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: valueColor ?? Colors.black87,
-            ),
+            'Проектів ще немає.\nСтворіть свій перший проект!',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
           ),
         ],
       ),
     );
   }
 
-  String? _formatDate(DateTime? date) {
-    if (date == null) return null;
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year;
-    return '$day.$month.$year';
+  void _showCreateProjectDialog(BuildContext context) {
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Новий проект'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomTextField(
+              controller: nameController,
+              labelText: 'Назва проекту',
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Скасувати'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                final newProject = context
+                    .read<ProjectProvider>()
+                    .createProject(nameController.text.trim());
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context, // Використовуємо контекст батьківського віджета (ProjectsScreen)
+                  MaterialPageRoute(
+                    builder: (_) => ProjectDetailsScreen(project: newProject),
+                  ),
+                );
+              }
+            },
+            child: const Text('Створити'),
+          ),
+        ],
+      ),
+    );
   }
 
-  String? _formatDateTime(DateTime? date) {
-    if (date == null) return null;
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year;
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day.$month.$year $hour:$minute';
-  }
-
-  Color _getStatusColor(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planned:
-        return Colors.grey;
-      case ProjectStatus.inProgress:
-        return Colors.blue;
-      case ProjectStatus.completed:
-        return Colors.green;
-      case ProjectStatus.cancelled:
-        return Colors.red;
-    }
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
 }

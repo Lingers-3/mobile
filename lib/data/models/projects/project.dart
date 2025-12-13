@@ -21,24 +21,23 @@ enum ProjectStatus {
 class Project {
   final int id;
   final String name;
-  final String description;
+  final String? description;
   final ProjectStatus status;
 
   // Дати
-  final DateTime? plannedDeadline; // Опціонально
-  final DateTime? actualDeadline; // "Перенесений" або "Фактичний" дедлайн
+  final DateTime? plannedDeadline;
+  final DateTime? actualDeadline;
   final DateTime? startDate;
   final DateTime? endDate;
 
   // Фінанси
-  final double? plannedIncome; // Опціонально (тепер nullable)
-  final double
-  actualIncome; // Фактичний дохід зазвичай починається з 0, тому лишаємо double
+  final double? plannedIncome;
+  final double? actualIncome;
   final String currency;
 
   // Години
-  final double? plannedHours; // Опціонально (тепер nullable)
-  final double actualHours;
+  final double? plannedHours;
+  final double? actualHours;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -52,14 +51,48 @@ class Project {
     this.actualDeadline,
     this.startDate,
     this.endDate,
-    this.plannedIncome, // null за замовчуванням
-    this.actualIncome = 0.0,
+    this.plannedIncome,
+    this.actualIncome,
     this.currency = 'UAH',
-    this.plannedHours, // null за замовчуванням
-    this.actualHours = 0.0,
+    this.plannedHours,
+    this.actualHours,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  // copyWith ... (оновіть відповідні поля на nullable, якщо використовуєте)
+  Project copyWith({
+    int? id,
+    String? name,
+    String? description,
+    ProjectStatus? status,
+    DateTime? plannedDeadline,
+    DateTime? actualDeadline,
+    DateTime? startDate,
+    DateTime? endDate,
+    double? plannedIncome,
+    double? actualIncome,
+    String? currency,
+    double? plannedHours,
+    double? actualHours,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      status: status ?? this.status,
+      plannedDeadline: plannedDeadline ?? this.plannedDeadline,
+      actualDeadline: actualDeadline ?? this.actualDeadline,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      plannedIncome: plannedIncome ?? this.plannedIncome,
+      actualIncome: actualIncome ?? this.actualIncome,
+      currency: currency ?? this.currency,
+      plannedHours: plannedHours ?? this.plannedHours,
+      actualHours: actualHours ?? this.actualHours,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

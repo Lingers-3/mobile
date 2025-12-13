@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 
 class ProjectInventoryTile extends StatelessWidget {
   final Item item;
@@ -17,6 +18,8 @@ class ProjectInventoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = null;
+
     final typeName = context.select<ItemTypeProvider, String>((provider) {
       try {
         final type = provider.itemTypes.firstWhere(
@@ -38,12 +41,21 @@ class ProjectInventoryTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: Container(
-          width: 40,
-          height: 40,
+          height: 64,
+          width: 64,
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1)
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.black26,
+            image: imageUrl != null
+                ? DecorationImage(
+                    image: NetworkImage(imageUrl!),
+                    fit: BoxFit.cover,
+                  )
+                : null,
           ),
-          child: const Icon(Icons.inventory_2, color: Colors.blue, size: 24),
+          child: imageUrl == null
+              ? const Icon(Icons.image, color: AppColors.purple, size: 40)
+              : null,
         ),
         title: Text(
           item.description ?? typeName,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/resource_reservations/resource_reservation.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
@@ -12,11 +13,13 @@ class ResourceReservationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = null;
+
     final itemProvider = context.watch<ItemProvider>();
     final item = itemProvider.items.cast<dynamic>().firstWhere(
-          (i) => i.id == reservation.itemId,
-          orElse: () => null,
-        );
+      (i) => i.id == reservation.itemId,
+      orElse: () => null,
+    );
 
     if (item == null) {
       return const Card(child: ListTile(title: Text('Завантаження...')));
@@ -34,29 +37,43 @@ class ResourceReservationCard extends StatelessWidget {
           children: [
             // Зображення
             Container(
-              width: 60,
-              height: 60,
+              height: 64,
+              width: 64,
               decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.black26,
+                image: imageUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(imageUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-              child: const Icon(Icons.inventory_2_outlined, size: 30),
+              child: imageUrl == null
+                  ? const Icon(Icons.image, color: AppColors.purple, size: 40)
+                  : null,
             ),
             const SizedBox(width: 12),
-            
+
             // Основна інформація
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.description ?? 'Предмет #${item.id}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
                   const SizedBox(height: 8),
-                  _buildInfoRow('Резерв:', reservation.reservedQuantity, unit, Colors.blue),
+                  _buildInfoRow(
+                    'Зарезервовано:',
+                    reservation.reservedQuantity,
+                    unit,
+                    Colors.blue,
+                  ),
                   const SizedBox(height: 4),
-                  _buildInfoRow('Використано:', reservation.usedQuantity, unit, Colors.green),
+                  _buildInfoRow(
+                    'Використано:',
+                    reservation.usedQuantity,
+                    unit,
+                    Colors.green,
+                  ),
                 ],
               ),
             ),
@@ -74,13 +91,21 @@ class ResourceReservationCard extends StatelessWidget {
                 const PopupMenuItem(
                   value: 'edit',
                   child: Row(
-                    children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Змінити')],
+                    children: [
+                      Icon(Icons.edit, size: 20),
+                      SizedBox(width: 8),
+                      Text('Змінити'),
+                    ],
                   ),
                 ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
-                    children: [Icon(Icons.delete, size: 20, color: Colors.red), SizedBox(width: 8), Text('Видалити', style: TextStyle(color: Colors.red))],
+                    children: [
+                      Icon(Icons.delete, size: 20, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Видалити', style: TextStyle(color: Colors.red)),
+                    ],
                   ),
                 ),
               ],
@@ -92,17 +117,23 @@ class ResourceReservationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, double value, String unit, Color valueColor) {
+  Widget _buildInfoRow(
+    String label,
+    double value,
+    String unit,
+    Color valueColor,
+  ) {
     return Row(
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
+        Text(label, style: const TextStyle(color: Colors.black, fontSize: 12)),
         const SizedBox(width: 8),
         Text(
           '${value.toStringAsFixed(2)} $unit',
-          style: TextStyle(fontWeight: FontWeight.bold, color: valueColor, fontSize: 14),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+            fontSize: 14,
+          ),
         ),
       ],
     );
@@ -115,10 +146,10 @@ class ResourceReservationCard extends StatelessWidget {
         reservation: reservation,
         onApply: (newReserved, newUsed) {
           context.read<ResourceReservationProvider>().updateReservation(
-                reservation.id,
-                reservedQuantity: newReserved,
-                usedQuantity: newUsed,
-              );
+            reservation.id,
+            reservedQuantity: newReserved,
+            usedQuantity: newUsed,
+          );
         },
       ),
     );
@@ -126,6 +157,8 @@ class ResourceReservationCard extends StatelessWidget {
 
   void _deleteReservation(BuildContext context) {
     // TODO: add delete confirmation dialog
-    context.read<ResourceReservationProvider>().deleteReservation(reservation.id);
+    context.read<ResourceReservationProvider>().deleteReservation(
+      reservation.id,
+    );
   }
 }

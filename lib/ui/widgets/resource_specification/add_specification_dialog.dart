@@ -7,8 +7,13 @@ import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 
 class AddSpecificationDialog extends StatefulWidget {
   final ItemType itemType;
+  final int projectId;
 
-  const AddSpecificationDialog({super.key, required this.itemType});
+  const AddSpecificationDialog({
+    super.key,
+    required this.itemType,
+    required this.projectId,
+  });
 
   @override
   State<AddSpecificationDialog> createState() => _AddSpecificationDialogState();
@@ -41,7 +46,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
         children: [
           // Вибір типу ресурсу
           DropdownButtonFormField<ResourceType>(
-            value: _selectedType,
+            initialValue: _selectedType,
             decoration: const InputDecoration(
               labelText: 'Тип використання',
               border: OutlineInputBorder(),
@@ -114,7 +119,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
     // Створюємо нову специфікацію
     final newSpec = ResourceSpecification(
       id: provider.generateId(), // Mock ID gen
-      projectId: 1, // Mock project ID
+      projectId: widget.projectId,
       itemTypeId: widget.itemType.id,
       resourceType: _selectedType,
       plannedQuantity: qty,

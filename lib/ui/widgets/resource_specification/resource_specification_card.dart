@@ -1,39 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
+import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
-import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
 
 class ResourceSpecificationCard extends StatelessWidget {
   final ResourceSpecification specification;
   final VoidCallback? onTap;
+  final ItemType itemType;
 
   const ResourceSpecificationCard({
     super.key,
     required this.specification,
+    required this.itemType,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 1. Отримуємо інформацію про ТИП ПРЕДМЕТУ (назва, картинка, одиниці)
-    final itemType = context.select<ItemTypeProvider, dynamic>((provider) {
-      try {
-        return provider.itemTypes.firstWhere(
-          (t) => t.id == specification.itemTypeId,
-        );
-      } catch (e) {
-        return null;
-      }
-    });
-
-    if (itemType == null) {
-      return const Card(
-        child: Padding(padding: EdgeInsets.all(16), child: Text('Loading...')),
-      );
-    }
-
     final String unit = itemType.displayMeasurementUnit;
     final String name = itemType.name;
 
