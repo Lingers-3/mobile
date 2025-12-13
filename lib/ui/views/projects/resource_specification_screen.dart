@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';

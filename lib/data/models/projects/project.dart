@@ -1,22 +1,10 @@
-enum ProjectState {
-  planned,
-  inProgress,
-  completed,
-  cancelled;
+import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 
-  String get label {
-    switch (this) {
-      case ProjectState.planned:
-        return 'Заплановано';
-      case ProjectState.inProgress:
-        return 'В процесі';
-      case ProjectState.completed:
-        return 'Завершено';
-      case ProjectState.cancelled:
-        return 'Відмінено';
-    }
-  }
+class _Sentinel {
+  const _Sentinel();
 }
+
+const _undefined = _Sentinel();
 
 class Project {
   final int id;
@@ -60,36 +48,101 @@ class Project {
   Project copyWith({
     int? id,
     String? name,
-    String? description,
+    // Використовуємо Object? для полів, які можуть бути null
+    Object? description = _undefined,
     ProjectState? status,
-    DateTime? plannedDeadline,
-    DateTime? actualDeadline,
-    DateTime? startDate,
-    DateTime? endDate,
-    double? plannedIncome,
-    double? actualIncome,
+    Object? plannedDeadline = _undefined,
+    Object? actualDeadline = _undefined,
+    Object? startDate = _undefined,
+    Object? endDate = _undefined,
+    Object? plannedIncome = _undefined,
+    Object? actualIncome = _undefined,
     String? currency,
-    double? plannedHours,
-    double? actualHours,
+    Object? plannedHours = _undefined,
+    Object? actualHours = _undefined,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return Project(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
+      description: description == _undefined
+          ? this.description
+          : description as String?,
       state: status ?? this.state,
-      plannedDeadline: plannedDeadline ?? this.plannedDeadline,
-      actualDeadline: actualDeadline ?? this.actualDeadline,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      plannedIncome: plannedIncome ?? this.plannedIncome,
-      actualIncome: actualIncome ?? this.actualIncome,
+      plannedDeadline: plannedDeadline == _undefined
+          ? this.plannedDeadline
+          : plannedDeadline as DateTime?,
+      actualDeadline: actualDeadline == _undefined
+          ? this.actualDeadline
+          : actualDeadline as DateTime?,
+      startDate: startDate == _undefined
+          ? this.startDate
+          : startDate as DateTime?,
+      endDate: endDate == _undefined ? this.endDate : endDate as DateTime?,
+      plannedIncome: plannedIncome == _undefined
+          ? this.plannedIncome
+          : plannedIncome as double?,
+      actualIncome: actualIncome == _undefined
+          ? this.actualIncome
+          : actualIncome as double?,
       currency: currency ?? this.currency,
-      plannedHours: plannedHours ?? this.plannedHours,
-      actualHours: actualHours ?? this.actualHours,
+      plannedHours: plannedHours == _undefined
+          ? this.plannedHours
+          : plannedHours as double?,
+      actualHours: actualHours == _undefined
+          ? this.actualHours
+          : actualHours as double?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  factory Project.fromJson(Map<String, dynamic> json) {
+    return Project(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      state: ProjectState.fromJson(json['state'] as String),
+      plannedDeadline: json['planned_deadline'] != null
+          ? DateTime.parse(json['planned_deadline'])
+          : null,
+      actualDeadline: json['actual_deadline'] != null
+          ? DateTime.parse(json['actual_deadline'])
+          : null,
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'])
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'])
+          : null,
+      plannedIncome: (json['planned_income'] as num?)?.toDouble(),
+      actualIncome: (json['actual_income'] as num?)?.toDouble(),
+      currency: json['currency'] as String? ?? 'UAH',
+      plannedHours: (json['planned_hours'] as num?)?.toDouble(),
+      actualHours: (json['actual_hours'] as num?)?.toDouble(),
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'state': state.toJson(),
+      'planned_deadline': plannedDeadline?.toIso8601String(),
+      'actual_deadline': actualDeadline?.toIso8601String(),
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'planned_income': plannedIncome,
+      'actual_income': actualIncome,
+      'currency': currency,
+      'planned_hours': plannedHours,
+      'actual_hours': actualHours,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
   }
 }

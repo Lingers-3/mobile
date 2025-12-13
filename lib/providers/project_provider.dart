@@ -1,100 +1,135 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_create_request.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_update_request.dart';
+import 'package:pocketeer_mobile/data/services/mock/mock_project_service.dart';
+import 'package:pocketeer_mobile/data/services/project_service.dart';
 
 class ProjectProvider extends ChangeNotifier {
-  // MOCK DATA: Список проектів
-  final List<Project> _projects = [
-    Project(
-      id: 1,
-      name: "Будка для собаки",
-      description: "Будівництво утепленої будки...",
-      state: ProjectState.inProgress,
-      plannedDeadline: DateTime.now().add(const Duration(days: 7)),
-      actualDeadline: DateTime.now().add(
-        const Duration(days: 3),
-      ), // Зміщений термін
-      plannedIncome: null,
-      plannedHours: 10.0,
-      actualHours: 2.5,
-      currency: 'UAH',
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      updatedAt: DateTime.now(),
-      startDate: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    Project(
-      id: 2,
-      name: "Ремонт кухні",
-      description: "Косметичний ремонт: фарбування стін, заміна плінтусів.",
-      state: ProjectState.planned,
-      plannedDeadline: DateTime.now().add(const Duration(days: 30)),
-      plannedIncome: 15000.0,
-      plannedHours: 40.0,
-      actualHours: null,
-      currency: 'UAH',
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      updatedAt: DateTime.now(),
-    ),
-    Project(
-      id: 3,
-      name: "Аніме це сила!!!",
-      description: "Ня.",
-      state: ProjectState.cancelled,
-      plannedDeadline: DateTime.now().add(const Duration(days: 30)),
-      plannedIncome: 10000.0,
-      plannedHours: null,
-      actualHours: null,
-      currency: 'UAH',
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-      endDate: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    Project(
-      id: 4,
-      name: "Bruh",
-      description: "Bruh.",
-      state: ProjectState.completed,
-      plannedDeadline: DateTime.now().add(const Duration(days: 30)),
-      plannedIncome: 10000.0,
-      plannedHours: null,
-      actualHours: null,
-      currency: 'UAH',
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-      endDate: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-  ];
+  // final ProjectService _projectService = ProjectService();
+  final MockProjectService _projectService = MockProjectService();
+
+  List<Project> _projects = [];
+  bool _isLoading = false;
+  String? _error;
 
   List<Project> get projects => _projects;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
 
-  // Створення нового проекту (тільки назва)
-  Project createProject(String name) {
-    final newId = _projects.isNotEmpty
-        ? _projects.map((e) => e.id).reduce(max) + 1
-        : 1;
-
-    final newProject = Project(
-      id: newId,
-      name: name,
-      description: "", // Порожній опис за замовчуванням
-      state: ProjectState.planned, // Початковий статус
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      // Всі інші поля за замовчуванням null або 0.0, як визначено в моделі
-    );
-
-    _projects.add(newProject);
+  Future<void> fetchProjects() async {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
 
-    return newProject;
+    try {
+      _projects = await _projectService.getAllProjects();
+    } catch (e) {
+      _error = e.toString();
+      _projects = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  // Оновлення проекту (на майбутнє)
-  void updateProject(Project updatedProject) {
-    final index = _projects.indexWhere((p) => p.id == updatedProject.id);
-    if (index != -1) {
-      _projects[index] = updatedProject;
+  Future<Project> createProject(String name) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final request = ProjectCreateRequest(name: name);
+      final newProject = await _projectService.createProject(request);
+      _projects.add(newProject);
+      return newProject;
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> updateProject(Project updatedProject) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final index = _projects.indexWhere((p) => p.id == updatedProject.id);
+      if (index != -1) {
+        final request = ProjectUpdateRequest.fromProject(updatedProject);
+        final result = await _projectService.updateProject(
+          updatedProject.id,
+          request,
+        );
+        _projects[index] = result;
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteProject(int id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _projectService.deleteProject(id);
+      _projects.removeWhere((p) => p.id == id);
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> startProject(int id) async {
+    try {
+      // Отримуємо оновлений проект від сервісу
+      final updatedProject = await _projectService.startProject(id);
+
+      // Знаходимо і замінюємо його в локальному списку
+      final index = _projects.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        _projects[index] = updatedProject;
+        notifyListeners(); // Тепер UI побачить зміни
+      }
+    } catch (e) {
+      // Обробка помилок
+      print(e);
+    }
+  }
+
+  Future<void> finishProject(int id) async {
+    try {
+      final updatedProject = await _projectService.finishProject(id);
+
+      final index = _projects.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        _projects[index] = updatedProject;
+        notifyListeners();
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future<void> cancelProject(int id) async {
+    try {
+      final updatedProject = await _projectService.cancelProject(id);
+
+      final index = _projects.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        _projects[index] = updatedProject;
+        notifyListeners();
+      }
+    } catch (e) {
+      print(e);
     }
   }
 }

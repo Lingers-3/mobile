@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
@@ -202,7 +203,45 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle('ЗАПЛАНОВАНО', Colors.grey),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'ЗАПЛАНОВАНО',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: project.state != ProjectState.planned
+                                  ? null
+                                  : () {
+                                      _showEditDialog(
+                                        title: 'Редагувати заплановане',
+                                        initialDate: project.plannedDeadline,
+                                        initialIncome: project.plannedIncome,
+                                        initialHours: project.plannedHours,
+                                        currency: project.currency,
+                                        onSave: (date, income, hours) {
+                                          context
+                                              .read<ProjectProvider>()
+                                              .updateProject(
+                                                project.copyWith(
+                                                  plannedDeadline: date,
+                                                  plannedIncome: income,
+                                                  plannedHours: hours,
+                                                ),
+                                              );
+                                        },
+                                      );
+                                    },
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         _buildReadOnlyField(
                           label: 'Дедлайн',
@@ -237,7 +276,46 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle('ФАКТИЧНО', Colors.blue),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'ФАКТИЧНО',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed:
+                                  project.state != ProjectState.inProgress
+                                  ? null
+                                  : () {
+                                      _showEditDialog(
+                                        title: 'Редагувати фактичне',
+                                        initialDate: project.actualDeadline,
+                                        initialIncome: project.actualIncome,
+                                        initialHours: project.actualHours,
+                                        currency: project.currency,
+                                        onSave: (date, income, hours) {
+                                          context
+                                              .read<ProjectProvider>()
+                                              .updateProject(
+                                                project.copyWith(
+                                                  actualDeadline: date,
+                                                  actualIncome: income,
+                                                  actualHours: hours,
+                                                ),
+                                              );
+                                        },
+                                      );
+                                    },
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         _buildReadOnlyField(
                           label: 'Дедлайн',
@@ -285,20 +363,26 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   ElevatedButton(
-                    onPressed: widget.project.state == ProjectState.planned
-                        ? () => _startProject()
+                    onPressed: project.state == ProjectState.planned
+                        ? () => context.read<ProjectProvider>().startProject(
+                            project.id,
+                          )
                         : null,
                     child: const Text('Почати'),
                   ),
                   ElevatedButton(
-                    onPressed: widget.project.state == ProjectState.inProgress
-                        ? () => _finishProject()
+                    onPressed: project.state == ProjectState.inProgress
+                        ? () => context.read<ProjectProvider>().finishProject(
+                            project.id,
+                          )
                         : null,
                     child: const Text('Завершити'),
                   ),
                   ElevatedButton(
-                    onPressed: widget.project.state == ProjectState.inProgress
-                        ? () => _cancelProject()
+                    onPressed: project.state == ProjectState.inProgress
+                        ? () => context.read<ProjectProvider>().cancelProject(
+                            project.id,
+                          )
                         : null,
                     child: const Text('Скасувати'),
                   ),
@@ -376,18 +460,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     }
   }
 
-  Widget _buildSectionTitle(String title, Color color) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 12,
-        letterSpacing: 1.0,
-      ),
-    );
-  }
-
   Widget _buildReadOnlyField({
     required String label,
     required String value,
@@ -411,6 +483,125 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showEditDialog({
+    required String title,
+    required DateTime? initialDate,
+    required double? initialIncome,
+    required double? initialHours,
+    required String currency,
+    required Function(DateTime?, double?, double?) onSave,
+  }) async {
+    DateTime? selectedDate = initialDate;
+    final incomeController = TextEditingController(
+      text: initialIncome?.toString() ?? '',
+    );
+    final hoursController = TextEditingController(
+      text: initialHours?.toString() ?? '',
+    );
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(title),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Вибір дати з можливістю очищення
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() => selectedDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Термін (Дедлайн)',
+                          border: const OutlineInputBorder(),
+                          // Якщо дата обрана, показуємо кнопку "Очистити", інакше іконку календаря
+                          suffixIcon: selectedDate != null
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    // Очищаємо дату
+                                    setState(() => selectedDate = null);
+                                  },
+                                )
+                              : const Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          selectedDate != null
+                              ? _formatDate(selectedDate!)!
+                              : 'Не встановлено',
+                          style: TextStyle(
+                            color: selectedDate == null
+                                ? Colors.grey
+                                : Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Введення доходу
+                    TextField(
+                      controller: incomeController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Дохід',
+                        border: const OutlineInputBorder(),
+                        suffixText: currency,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Введення годин
+                    TextField(
+                      controller: hoursController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Робочі години',
+                        border: OutlineInputBorder(),
+                        suffixText: 'год',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Скасувати'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final income = double.tryParse(incomeController.text);
+                    final hours = double.tryParse(hoursController.text);
+                    // Передаємо selectedDate (який може бути null)
+                    onSave(selectedDate, income, hours);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Зберегти'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
@@ -69,7 +70,7 @@ class ProjectsScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 80),
               children: [
                 if (inProgressProjects.isNotEmpty) ...[
-                  _buildSectionHeader('В ПРОЦЕСІ', Colors.blue),
+                  _buildSectionHeader('IN PROCESS', Colors.blue),
                   ...inProgressProjects.map(
                     (p) => _buildProjectCard(context, p),
                   ),
@@ -77,13 +78,13 @@ class ProjectsScreen extends StatelessWidget {
                 ],
 
                 if (plannedProjects.isNotEmpty) ...[
-                  _buildSectionHeader('ПЛАНУВАННЯ', Colors.grey),
+                  _buildSectionHeader('DRAFT', Colors.grey),
                   ...plannedProjects.map((p) => _buildProjectCard(context, p)),
                   const SizedBox(height: 16),
                 ],
 
                 if (completedProjects.isNotEmpty) ...[
-                  _buildSectionHeader('ЗАВЕРШЕНІ', Colors.green),
+                  _buildSectionHeader('FINISHED', Colors.green),
                   ...completedProjects.map(
                     (p) => _buildProjectCard(context, p),
                   ),
@@ -338,9 +339,9 @@ class ProjectsScreen extends StatelessWidget {
             child: const Text('Скасувати'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameController.text.trim().isNotEmpty) {
-                final newProject = context
+                final newProject = await context
                     .read<ProjectProvider>()
                     .createProject(nameController.text.trim());
                 Navigator.pop(ctx);
