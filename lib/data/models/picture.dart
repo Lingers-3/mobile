@@ -17,12 +17,16 @@ class Picture {
 
   factory Picture.fromJson(Map<String, dynamic> json) {
     return Picture(
-      id: json['id'],
-      fileName: json['file_name'],
-      mimeType: json['mime_type'],
-      size: json['size'],
-      createdAt: DateTime.parse(json['created_at']),
-      url: json['url'],
+      id: json['id'] as int,
+      fileName: (json['file_name'] as String?) ??
+          (json['original_filename'] as String?) ??
+          '',
+      mimeType: (json['mime_type'] as String?) ?? '',
+      size: (json['size'] as num?)?.toInt() ?? 0,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      url: json['url'] as String?,
     );
   }
 
