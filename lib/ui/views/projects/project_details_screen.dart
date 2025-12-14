@@ -30,7 +30,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    // Завантажуємо дані, необхідні для деталізації
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ItemTypeProvider>().loadItemTypes();
       context.read<ItemProvider>().loadAllItems();
@@ -250,12 +249,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                             onSave: (date, income, hours) {
                                               context
                                                   .read<ProjectProvider>()
-                                                  .updateProject(
-                                                    project.copyWith(
-                                                      plannedDeadline: date,
-                                                      plannedIncome: income,
-                                                      plannedHours: hours,
-                                                    ),
+                                                  .updateProjectPlan(
+                                                    project.id,
+                                                    date,
+                                                    income,
+                                                    hours,
                                                   );
                                             },
                                           );
@@ -328,12 +326,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                             onSave: (date, income, hours) {
                                               context
                                                   .read<ProjectProvider>()
-                                                  .updateProject(
-                                                    project.copyWith(
-                                                      actualDeadline: date,
-                                                      actualIncome: income,
-                                                      actualHours: hours,
-                                                    ),
+                                                  .updateProjectActual(
+                                                    project.id,
+                                                    date,
+                                                    income,
+                                                    hours,
                                                   );
                                             },
                                           );

@@ -8,8 +8,21 @@ import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:pocketeer_mobile/ui/views/projects/project_details_screen.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 
-class ProjectsScreen extends StatelessWidget {
+class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
+
+  @override
+  State<ProjectsScreen> createState() => _ProjectsScreenState();
+}
+
+class _ProjectsScreenState extends State<ProjectsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProjectProvider>().fetchProjects();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

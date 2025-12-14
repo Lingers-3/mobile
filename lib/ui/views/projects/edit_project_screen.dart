@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
-import 'package:pocketeer_mobile/data/models/projects/project_update_request.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
@@ -104,13 +102,12 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
 
   void _saveProject() {
     if (_formKey.currentState!.validate()) {
-      final updatedProject = widget.project.copyWith(
-        name: _nameController.text.trim(),
-        description: _descController.text.trim().isEmpty
-            ? null
-            : _descController.text.trim(),
-      );
-      context.read<ProjectProvider>().updateProject(updatedProject);
+      final id = widget.project.id;
+      final name = _nameController.text.trim();
+      final description = _descController.text.trim().isEmpty
+          ? null
+          : _descController.text.trim();
+      context.read<ProjectProvider>().updateProjectInfo(id, name, description);
       Navigator.pop(context);
     }
   }
