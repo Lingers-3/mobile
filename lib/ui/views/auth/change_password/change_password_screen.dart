@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'change_password_controller.dart';
 import '../../../widgets/password_rules_widget.dart';
 
@@ -138,25 +139,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ? const Center(
                       child: CircularProgressIndicator(color: AppColors.pink),
                     )
-                  : Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.fadePurple,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: _handleSubmit,
-                        child: const Text(
-                          'Change Password',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ),
+                  : GradientButton(
+                      label: 'Change Password',
+                      onPressed: _handleSubmit,
                     ),
             ],
           ),

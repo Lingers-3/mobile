@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/unit.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_floating_button.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
@@ -10,6 +11,7 @@ import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/views/inventory/item_screens/items_menu_screen.dart';
 import 'package:pocketeer_mobile/ui/views/inventory/item_type_screens/add_item_type_screen.dart';
 import 'package:pocketeer_mobile/ui/views/inventory/item_type_screens/show_item_type_screen.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_dialog.dart';
 import 'package:pocketeer_mobile/ui/widgets/item_type_card.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -22,6 +24,24 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen>
     with AutomaticKeepAliveClientMixin {
   final Set<int> _selected = {};
+
+  Future<bool> _confirmDelete({required String message}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CustomDialog(
+          label: 'Delete',
+          confirmationText: message,
+          dialogFunction: () async {
+            Navigator.of(dialogContext).pop(true);
+          },
+        );
+      },
+    );
+
+    return confirmed ?? false;
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -51,6 +71,13 @@ class _InventoryScreenState extends State<InventoryScreen>
   }
 
   Future<void> _deleteSelected() async {
+    if (_selected.isEmpty) return;
+
+    final confirmed = await _confirmDelete(
+      message: 'Are you sure you want to delete ${_selected.length} item(s)?',
+    );
+    if (!confirmed) return;
+
     final provider = context.read<ItemTypeProvider>();
 
     for (final id in _selected) {
@@ -58,6 +85,17 @@ class _InventoryScreenState extends State<InventoryScreen>
     }
 
     setState(() => _selected.clear());
+  }
+
+  Future<void> _deleteItemType(ItemType itemType) async {
+    final confirmed = await _confirmDelete(
+      message: 'Are you sure you want to delete "${itemType.name}"?',
+    );
+    if (!confirmed) return;
+    if (!mounted) return;
+
+    await context.read<ItemTypeProvider>().deleteItemType(itemType.id);
+    setState(() => _selected.remove(itemType.id));
   }
 
   Future<void> _openAddItemType() async {
@@ -99,9 +137,7 @@ class _InventoryScreenState extends State<InventoryScreen>
     final loading = provider.loading;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryBackground,
         title: Text(
           _selected.isEmpty ? "" : "${_selected.length} selected",
           style: const TextStyle(color: AppColors.pink),
@@ -116,11 +152,7 @@ class _InventoryScreenState extends State<InventoryScreen>
               ]
             : [],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddItemType,
-        backgroundColor: AppColors.pink,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: CustomFloatingButton(onPressed: _openAddItemType),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -170,8 +202,8 @@ class _InventoryScreenState extends State<InventoryScreen>
                     onTap: () => _openItems(itemType),
                     onLongPress: () => _toggleSelection(itemType.id),
                     onOpen: () => _openShowInfo(itemType),
-                    onDelete: () async {
-                      await provider.deleteItemType(itemType.id);
+                    onDelete: () {
+                      _deleteItemType(itemType);
                     },
                   );
                 },

@@ -4,6 +4,7 @@ import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/widgets/delete_account_confirmation_dialog.dart';
 import 'package:pocketeer_mobile/ui/widgets/logout_confirmation_dialog.dart';
+import 'package:pocketeer_mobile/ui/widgets/notifications.dart';
 import 'package:pocketeer_mobile/ui/widgets/setting_button.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -83,6 +84,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               buttonText: 'Delete Account',
               buttonFunction: _showDeleteAccountDialog,
             ),
+            SizedBox(height: 40),
+            Notifications(),
           ],
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/tag_provider.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/routes/app_router.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
@@ -36,7 +37,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRouter.generate,
       initialRoute: AppRouter.authGate,
-
+      theme: appTheme,
       builder: (context, child) {
         return child!;
       },

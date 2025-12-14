@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_floating_button.dart';
 import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
@@ -78,11 +79,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         backgroundColor: AppColors.primaryBackground,
       ),
       backgroundColor: AppColors.primaryBackground,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.pink,
-        heroTag: 'fab_create_project',
+
+      floatingActionButton: CustomFloatingButton(
         onPressed: () => _showCreateProjectDialog(context),
-        child: const Icon(Icons.add),
       ),
       body: allProjects.isEmpty
           ? _buildEmptyState()
@@ -262,7 +261,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                desc.isNotEmpty ? desc : 'Немає опису',
+                desc.isNotEmpty ? desc : 'No description',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
@@ -362,8 +361,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(ctx),
+
             style: OutlinedButton.styleFrom(
+              fixedSize: Size(80, 50),
+
               backgroundColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: const BorderSide(color: AppColors.purple),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text(
               'Cancel',
