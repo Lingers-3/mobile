@@ -1,4 +1,5 @@
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
+import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 
 class _Sentinel {
   const _Sentinel();
@@ -27,6 +28,9 @@ class Project {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Added field for specifications
+  final List<ResourceSpecification>? specifications;
+
   Project({
     required this.id,
     required this.name,
@@ -43,12 +47,13 @@ class Project {
     this.actualHours,
     required this.createdAt,
     required this.updatedAt,
+    this.specifications,
   });
 
   Project copyWith({
     int? id,
     String? name,
-    // Використовуємо Object? для полів, які можуть бути null
+    // Using Object? for nullable fields to distinguish between "ignore" and "set to null"
     Object? description = _undefined,
     ProjectState? status,
     Object? plannedDeadline = _undefined,
@@ -62,6 +67,7 @@ class Project {
     Object? actualHours = _undefined,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? specifications = _undefined, // Added support for updating specifications
   }) {
     return Project(
       id: id ?? this.id,
@@ -95,6 +101,9 @@ class Project {
           : actualHours as double?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      specifications: specifications == _undefined
+          ? this.specifications
+          : specifications as List<ResourceSpecification>?,
     );
   }
 
@@ -123,6 +132,11 @@ class Project {
       actualHours: (json['actual_hours'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
+      specifications: json['resource_specifications'] != null
+          ? (json['resource_specifications'] as List)
+              .map((e) => ResourceSpecification.fromJson(e))
+              .toList()
+          : null,
     );
   }
 
@@ -143,6 +157,7 @@ class Project {
       'actual_hours': actualHours,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'resource_specifications': specifications?.map((e) => e.toJson()).toList(),
     };
   }
 }
