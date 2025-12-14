@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pocketeer_mobile/data/models/unit.dart';
@@ -7,6 +11,7 @@ import 'package:pocketeer_mobile/data/models/item_types/item_type_update_request
 import 'package:pocketeer_mobile/data/services/item_type_service.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/tag_selector.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 
@@ -30,6 +35,10 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
   late Unit _baseUnit;
   late Unit _displayUnit;
   late List<int> _selectedTags;
+
+  File? _imageFile;
+  int? _pictureId;
+  bool _uploadingImage = false;
 
   bool _saving = false;
 
@@ -56,6 +65,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
     );
 
     _selectedTags = [...widget.itemType.tagIds];
+    _pictureId = widget.itemType.pictureId;
   }
 
   @override
@@ -65,6 +75,27 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
     _defaultQtyCtrl.dispose();
     _shortageCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+
+    setState(() {
+      _imageFile = File(file.path);
+      _uploadingImage = true;
+    });
+
+    try {
+      final picture = await context.read<PictureProvider>().uploadPicture(
+        _imageFile!,
+      );
+      if (!mounted) return;
+      setState(() => _pictureId = picture.id);
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
   }
 
   Future<void> _save() async {
@@ -79,6 +110,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
       displayMeasurementUnit: _displayUnit.backendValue,
       defaultQuantity: double.tryParse(_defaultQtyCtrl.text),
       shortageThreshold: double.tryParse(_shortageCtrl.text),
+      pictureId: _pictureId,
       tagIds: _selectedTags,
     );
 
@@ -115,6 +147,61 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              GestureDetector(
+                onTap: _uploadingImage ? null : _pickImage,
+                child: Container(
+                  height: 400,
+                  width: 400,
+                  decoration: BoxDecoration(
+                    color: AppColors.dialogBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    image: _imageFile != null
+                        ? DecorationImage(
+                            image: FileImage(_imageFile!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _uploadingImage
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.pink,
+                          ),
+                        )
+                      : _imageFile == null && _pictureId != null
+                      ? FutureBuilder<Uint8List>(
+                          future: context
+                              .read<PictureProvider>()
+                              .getPictureBytes(_pictureId!),
+                          builder: (context, snapshot) {
+                            final bytes = snapshot.data;
+                            if (bytes != null) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.memory(bytes, fit: BoxFit.cover),
+                              );
+                            }
+                            return const Center(
+                              child: Icon(
+                                Icons.add_a_photo,
+                                color: AppColors.pink,
+                                size: 50,
+                              ),
+                            );
+                          },
+                        )
+                      : const Center(
+                          child: Icon(
+                            Icons.add_a_photo,
+                            color: AppColors.pink,
+                            size: 50,
+                          ),
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               _field(
                 "Name",
                 _nameCtrl,

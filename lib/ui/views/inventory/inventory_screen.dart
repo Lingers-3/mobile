@@ -163,6 +163,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                     itemType: itemType,
                     isSelected: isSelected,
                     imageUrl: null,
+                    pictureId: itemType.pictureId,
                     totalQuantity: total,
                     expirationStatus: expirationStatus,
                     isShortage: isShortage,

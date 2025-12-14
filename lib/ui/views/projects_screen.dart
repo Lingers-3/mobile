@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
@@ -58,8 +60,13 @@ class ProjectsScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Мої Проекти'), centerTitle: true),
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: AppColors.primaryBackground,
+      ),
+      backgroundColor: AppColors.primaryBackground,
       floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.pink,
         heroTag: 'fab_create_project',
         onPressed: () => _showCreateProjectDialog(context),
         child: const Icon(Icons.add),
@@ -185,6 +192,7 @@ class ProjectsScreen extends StatelessWidget {
     final desc = project.description ?? '';
 
     return Card(
+      color: AppColors.purple,
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -304,12 +312,12 @@ class ProjectsScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_add, size: 64, color: Colors.grey),
+          Icon(Icons.assignment_add, size: 64, color: AppColors.pink),
           SizedBox(height: 16),
           Text(
-            'Проектів ще немає.\nСтворіть свій перший проект!',
+            'There are no projects yet\nCreate your first project!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: AppColors.pink),
           ),
         ],
       ),
@@ -322,23 +330,37 @@ class ProjectsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Новий проект'),
+        backgroundColor: AppColors.dialogBackground,
+        title: const Text(
+          'New Project',
+          style: TextStyle(color: AppColors.purple),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CustomTextField(
               controller: nameController,
-              labelText: 'Назва проекту',
+              labelText: 'Project name',
+
               autofocus: true,
             ),
           ],
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Скасувати'),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.purple),
+            ),
           ),
-          ElevatedButton(
+
+          GradientButton(
+            label: 'Create',
+            width: 100,
             onPressed: () async {
               if (nameController.text.trim().isNotEmpty) {
                 final newProject = await context
@@ -353,7 +375,6 @@ class ProjectsScreen extends StatelessWidget {
                 );
               }
             },
-            child: const Text('Створити'),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_update_request.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
@@ -40,8 +41,14 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.primaryBackground,
       appBar: AppBar(
-        title: const Text('Редагування проекту'),
+        backgroundColor: AppColors.primaryBackground,
+        iconTheme: IconThemeData(color: AppColors.purple),
+        title: const Text(
+          'Project editing',
+          style: TextStyle(color: AppColors.purple),
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.check), onPressed: _saveProject),
         ],
@@ -51,15 +58,15 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _buildSectionHeader('Основна інформація'),
+            _buildSectionHeader('Main information'),
             CustomTextField(
               controller: _nameController,
-              labelText: 'Назва проекту',
+              labelText: 'Project name',
             ),
             const SizedBox(height: 12),
             CustomTextField(
               controller: _descController,
-              labelText: 'Опис',
+              labelText: 'Description',
               maxLines: 3,
             ),
           ],
@@ -82,7 +89,7 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
             title.toUpperCase(),
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isActive ? Colors.black87 : Colors.grey,
+              color: isActive ? AppColors.pink : AppColors.purple,
             ),
           ),
           if (note != null)

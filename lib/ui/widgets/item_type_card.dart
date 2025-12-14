@@ -1,13 +1,19 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
+import 'package:pocketeer_mobile/data/models/picture.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/unit.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
+import 'package:pocketeer_mobile/providers/picture_provider.dart';
+import 'package:provider/provider.dart';
 
 class ItemTypeCard extends StatelessWidget {
   final ItemType itemType;
   final bool isSelected;
   final String? imageUrl;
+  final int? pictureId;
   final ItemExpirationStatus expirationStatus;
   final bool isShortage;
 
@@ -23,6 +29,7 @@ class ItemTypeCard extends StatelessWidget {
     required this.itemType,
     required this.isSelected,
     required this.imageUrl,
+    this.pictureId,
     this.onTap,
     this.onLongPress,
     this.onOpen,
@@ -74,7 +81,7 @@ class ItemTypeCard extends StatelessWidget {
                 ),
               ),
             Positioned(
-              right: 0,
+              right: -7,
               child: PopupMenuButton<String>(
                 color: AppColors.dialogBackground,
                 icon: const Icon(Icons.more_vert, color: AppColors.purple),
@@ -112,27 +119,7 @@ class ItemTypeCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // IMAGE
-                  Container(
-                    height: 140,
-                    width: 140,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.black26,
-                      image: imageUrl != null
-                          ? DecorationImage(
-                              image: NetworkImage(imageUrl!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: imageUrl == null
-                        ? const Icon(
-                            Icons.image,
-                            color: AppColors.purple,
-                            size: 40,
-                          )
-                        : null,
-                  ),
+                  _buildImage(context),
 
                   const SizedBox(height: 12),
 
@@ -183,6 +170,77 @@ class ItemTypeCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImage(BuildContext context) {
+    final placeholder = const Icon(
+      Icons.image,
+      color: AppColors.purple,
+      size: 40,
+    );
+
+    final provider = context.read<PictureProvider>();
+    Picture? cached;
+    if (pictureId != null) {
+      try {
+        cached = provider.pictures.firstWhere((p) => p.id == pictureId);
+      } catch (_) {
+        cached = null;
+      }
+    }
+    final resolvedUrl = imageUrl ?? cached?.url;
+
+    if (resolvedUrl != null) {
+      return _imageContainer(image: NetworkImage(resolvedUrl));
+    }
+
+    if (pictureId == null) {
+      return _imageContainer(icon: placeholder);
+    }
+
+    final cachedBytes = provider.getCachedPictureBytes(pictureId!);
+    if (cachedBytes != null) {
+      return _imageContainer(image: MemoryImage(cachedBytes));
+    }
+
+    return FutureBuilder<Uint8List>(
+      future: provider.getPictureBytes(pictureId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _imageContainer(loading: true);
+        }
+        final bytes = snapshot.data;
+        if (bytes != null) {
+          return _imageContainer(image: MemoryImage(bytes));
+        }
+        return _imageContainer(icon: placeholder);
+      },
+    );
+  }
+
+  Widget _imageContainer({
+    ImageProvider? image,
+    bool loading = false,
+    Widget? icon,
+  }) {
+    return Container(
+      height: 140,
+      width: 140,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.black26,
+        image: image != null
+            ? DecorationImage(image: image, fit: BoxFit.cover)
+            : null,
+      ),
+      child: loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.pink),
+            )
+          : image == null
+          ? icon
+          : null,
     );
   }
 }

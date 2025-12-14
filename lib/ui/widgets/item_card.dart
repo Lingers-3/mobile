@@ -1,7 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
+import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/views/inventory/item_screens/show_item_screen.dart';
+import 'package:provider/provider.dart';
 
 class ItemCard extends StatelessWidget {
   final Item item;
@@ -31,6 +36,44 @@ class ItemCard extends StatelessWidget {
     return AppColors.dialogBackground;
   }
 
+  Widget _buildImage(BuildContext context) {
+    final placeholder = const Center(
+      child: Icon(Icons.image, size: 70, color: AppColors.purple),
+    );
+
+    final pictureId = context.select<ItemTypeProvider, int?>((provider) {
+      final idx = provider.itemTypes.indexWhere((t) => t.id == item.itemTypeId);
+      if (idx == -1) return null;
+      return provider.itemTypes[idx].pictureId;
+    });
+
+    if (pictureId == null) return placeholder;
+
+    final pictureProvider = context.read<PictureProvider>();
+    final cachedBytes = pictureProvider.getCachedPictureBytes(pictureId);
+    if (cachedBytes != null) {
+      return SizedBox.expand(
+        child: Image.memory(cachedBytes, fit: BoxFit.cover),
+      );
+    }
+
+    return FutureBuilder<Uint8List>(
+      future: pictureProvider.getPictureBytes(pictureId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.pink),
+          );
+        }
+        final bytes = snapshot.data;
+        if (bytes != null) {
+          return SizedBox.expand(child: Image.memory(bytes, fit: BoxFit.cover));
+        }
+        return placeholder;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -57,9 +100,7 @@ class ItemCard extends StatelessWidget {
                 ),
                 child: Container(
                   color: AppColors.dialogBackground,
-                  child: const Center(
-                    child: Icon(Icons.image, size: 70, color: AppColors.purple),
-                  ),
+                  child: _buildImage(context),
                 ),
               ),
             ),
@@ -115,4 +156,3 @@ class ItemCard extends StatelessWidget {
     );
   }
 }
-

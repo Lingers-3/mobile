@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
@@ -27,12 +28,21 @@ class SelectResourceItemTypeScreen extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Оберіть тип ресурсу')),
+      backgroundColor: AppColors.primaryBackground,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryBackground,
+        title: const Text(
+          'Choose resource type',
+          style: TextStyle(color: AppColors.purple),
+        ),
+        iconTheme: IconThemeData(color: AppColors.purple),
+      ),
       body: itemTypes.isEmpty
           ? const Center(
               child: Text(
-                'Всі доступні типи вже додані до проекту\nабо інвентар порожній.',
+                'All avalaible types were added to the project\nor inventory is empty.',
                 textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.purple),
               ),
             )
           : GridView.builder(
@@ -55,7 +65,8 @@ class SelectResourceItemTypeScreen extends StatelessWidget {
                 return ItemTypeCard(
                   itemType: type,
                   isSelected: false,
-                  imageUrl: null, // type.pictureId mapping logic here
+                  imageUrl: null,
+                  pictureId: type.pictureId,
                   expirationStatus: itemProvider.getTypeExpirationStatus(
                     type.id,
                   ),

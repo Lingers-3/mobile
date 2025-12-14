@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
+import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/providers/tag_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -67,12 +70,41 @@ class _ShowItemTypeScreenState extends State<ShowItemTypeScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             Container(
-              height: 160,
+              height: 400,
+              width: 400,
               decoration: BoxDecoration(
                 color: AppColors.dialogBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.image, color: AppColors.purple, size: 64),
+              child: _itemType.pictureId == null
+                  ? const Icon(Icons.image, color: AppColors.purple, size: 64)
+                  : FutureBuilder<Uint8List>(
+                      future: context.read<PictureProvider>().getPictureBytes(
+                        _itemType.pictureId!,
+                      ),
+                      builder: (context, snapshot) {
+                        final bytes = snapshot.data;
+                        if (bytes != null) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(bytes, fit: BoxFit.cover),
+                          );
+                        }
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.pink,
+                            ),
+                          );
+                        }
+                        return const Icon(
+                          Icons.image,
+                          color: AppColors.purple,
+                          size: 64,
+                        );
+                      },
+                    ),
             ),
             const SizedBox(height: 24),
 

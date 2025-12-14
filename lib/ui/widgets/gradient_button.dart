@@ -7,6 +7,8 @@ class GradientButton extends StatelessWidget {
   final bool loading;
   final EdgeInsets padding;
   final double borderRadius;
+  final double width;
+  final double height;
 
   const GradientButton({
     super.key,
@@ -15,11 +17,15 @@ class GradientButton extends StatelessWidget {
     this.loading = false,
     this.padding = const EdgeInsets.symmetric(vertical: 14),
     this.borderRadius = 12,
+    this.width = 400,
+    this.height = 50,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         gradient: AppColors.fadePurple,
         borderRadius: BorderRadius.circular(borderRadius),

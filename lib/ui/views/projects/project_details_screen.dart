@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
@@ -61,12 +63,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     final desc = project.description;
 
     return Scaffold(
+      backgroundColor: AppColors.primaryBackground,
       appBar: AppBar(
-        title: Text(project.name),
+        iconTheme: IconThemeData(color: AppColors.purple),
+        backgroundColor: AppColors.primaryBackground,
+        title: Text(project.name, style: TextStyle(color: AppColors.purple)),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit, color: AppColors.purple),
             onPressed: () {
               Navigator.push(
                 context,
@@ -79,7 +84,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'project_details_fab_${project.id}', // Унікальний тег
+        heroTag: 'project_details_fab_${project.id}',
+        backgroundColor: AppColors.pink, // Унікальний тег
         onPressed: () {
           final usedTypeIds = projectSpecs.map((s) => s.itemTypeId).toList();
           Navigator.push(
@@ -92,351 +98,390 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             ),
           );
         },
-        label: const Text('Додати ресурс'),
+        label: const Text('Add resource'),
         icon: const Icon(Icons.add),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- HEADER ---
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Container(
+        color: AppColors.primaryBackground,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Container(
+            color: AppColors.primaryBackground,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- HEADER ---
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            project.state,
-                          ).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getStatusColor(project.state),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(
+                                project.state,
+                              ).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _getStatusColor(project.state),
+                              ),
+                            ),
+                            child: Text(
+                              project.state.label,
+                              style: TextStyle(
+                                color: _getStatusColor(project.state),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          project.state.label,
-                          style: TextStyle(
-                            color: _getStatusColor(project.state),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
+                          if (dateInfo != null)
+                            Text(
+                              dateInfo,
+                              style: TextStyle(
+                                color: AppColors.purple,
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                        ],
                       ),
-                      if (dateInfo != null)
-                        Text(
-                          dateInfo,
+                      const SizedBox(height: 16),
+                      if (desc != null && desc.isNotEmpty) ...[
+                        InkWell(
+                          onTap: () => setState(
+                            () => _isDescriptionExpanded =
+                                !_isDescriptionExpanded,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                desc,
+                                maxLines: _isDescriptionExpanded ? null : 2,
+                                overflow: _isDescriptionExpanded
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  height: 1.5,
+                                  color: AppColors.purple,
+                                ),
+                              ),
+                              if (!_isDescriptionExpanded && desc.length > 100)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    'Open...',
+                                    style: TextStyle(
+                                      color: AppColors.purple,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ] else
+                        const Text(
+                          "No description",
                           style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
+                            color: AppColors.purple,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  if (desc != null && desc.isNotEmpty) ...[
-                    InkWell(
-                      onTap: () => setState(
-                        () => _isDescriptionExpanded = !_isDescriptionExpanded,
+                ),
+
+                const Divider(height: 1),
+
+                // --- ДЗЕРКАЛЬНІ КОЛОНКИ ---
+                Container(
+                  color: AppColors.primaryBackground,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'PLANNED',
+                                  style: TextStyle(
+                                    color: AppColors.purple,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: AppColors.purple,
+                                  ),
+                                  onPressed:
+                                      project.state != ProjectState.planned
+                                      ? null
+                                      : () {
+                                          _showEditDialog(
+                                            title: 'Edit planned',
+                                            initialDate:
+                                                project.plannedDeadline,
+                                            initialIncome:
+                                                project.plannedIncome,
+                                            initialHours: project.plannedHours,
+                                            currency: project.currency,
+                                            onSave: (date, income, hours) {
+                                              context
+                                                  .read<ProjectProvider>()
+                                                  .updateProject(
+                                                    project.copyWith(
+                                                      plannedDeadline: date,
+                                                      plannedIncome: income,
+                                                      plannedHours: hours,
+                                                    ),
+                                                  );
+                                            },
+                                          );
+                                        },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildReadOnlyField(
+                              label: 'Deadline',
+                              value:
+                                  _formatDate(project.plannedDeadline) ?? '—',
+                            ),
+                            _buildReadOnlyField(
+                              label: 'Revenue',
+                              value:
+                                  project.plannedIncome != null &&
+                                      project.plannedIncome != 0.0
+                                  ? '${project.plannedIncome} ${project.currency}'
+                                  : '—',
+                            ),
+                            _buildReadOnlyField(
+                              label: 'Completion time',
+                              value:
+                                  project.plannedHours != null &&
+                                      project.plannedHours != 0.0
+                                  ? '${project.plannedHours} год'
+                                  : '—',
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            desc,
-                            maxLines: _isDescriptionExpanded ? null : 2,
-                            overflow: _isDescriptionExpanded
-                                ? TextOverflow.visible
-                                : TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              height: 1.5,
-                              color: Colors.black87,
+                      Container(
+                        width: 1,
+                        height: 160,
+                        color: AppColors.primaryBackground,
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'IN FACT',
+                                  style: TextStyle(
+                                    color: AppColors.pink,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: AppColors.purple,
+                                  ),
+                                  onPressed:
+                                      project.state != ProjectState.inProgress
+                                      ? null
+                                      : () {
+                                          _showEditDialog(
+                                            title: 'Edit in Fact',
+                                            initialDate: project.actualDeadline,
+                                            initialIncome: project.actualIncome,
+                                            initialHours: project.actualHours,
+                                            currency: project.currency,
+                                            onSave: (date, income, hours) {
+                                              context
+                                                  .read<ProjectProvider>()
+                                                  .updateProject(
+                                                    project.copyWith(
+                                                      actualDeadline: date,
+                                                      actualIncome: income,
+                                                      actualHours: hours,
+                                                    ),
+                                                  );
+                                            },
+                                          );
+                                        },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildReadOnlyField(
+                              label: 'Deadline',
+                              value: _formatDate(project.actualDeadline) ?? '—',
+                              isBold: true,
+                            ),
+                            _buildReadOnlyField(
+                              label: 'Revenue',
+                              value:
+                                  project.actualIncome != null &&
+                                      project.actualIncome != 0
+                                  ? '${project.actualIncome} ${project.currency}'
+                                  : '—',
+                              valueColor: (project.actualIncome ?? 0) > 0
+                                  ? Colors.green
+                                  : null,
+                            ),
+                            _buildReadOnlyField(
+                              label: 'Completion time',
+                              value:
+                                  project.actualHours != null &&
+                                      project.actualHours != 0.0
+                                  ? '${project.actualHours} год'
+                                  : '—',
+                              valueColor:
+                                  (project.plannedHours != null &&
+                                      (project.actualHours ?? 0) >
+                                          (project.plannedHours ?? 0))
+                                  ? Colors.red
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                // --- ЕКШЕНИ ---
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                        ),
+                        onPressed: project.state == ProjectState.planned
+                            ? () => context
+                                  .read<ProjectProvider>()
+                                  .startProject(project.id)
+                            : null,
+                        child: const Text(
+                          'Begin',
+                          style: TextStyle(color: AppColors.purple),
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                        ),
+                        onPressed: project.state == ProjectState.inProgress
+                            ? () => context
+                                  .read<ProjectProvider>()
+                                  .finishProject(project.id)
+                            : null,
+                        child: const Text(
+                          'End',
+                          style: TextStyle(color: AppColors.purple),
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                        ),
+                        onPressed: project.state == ProjectState.inProgress
+                            ? () => context
+                                  .read<ProjectProvider>()
+                                  .cancelProject(project.id)
+                            : null,
+                        child: const Text(
+                          'Reject',
+                          style: TextStyle(color: AppColors.purple),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                // --- РЕСУРСИ ---
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                  child: Text(
+                    'PROJECT RESOURCES',
+                    style: TextStyle(
+                      color: AppColors.purple,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+
+                if (projectSpecs.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(child: Text('Resources not added yet')),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: projectSpecs.length,
+                    itemBuilder: (context, index) {
+                      final specification = projectSpecs[index];
+                      final itemType = projectItemTypes.firstWhere(
+                        (it) => it.id == specification.itemTypeId,
+                      );
+                      return ResourceSpecificationCard(
+                        specification: specification,
+                        itemType: itemType,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ResourceSpecificationScreen(
+                              specification: projectSpecs[index],
+                              projectStatus: project.state,
+                              itemType: itemType,
                             ),
                           ),
-                          if (!_isDescriptionExpanded && desc.length > 100)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                'Розгорнути...',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ] else
-                    const Text(
-                      "Немає опису",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                ],
-              ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
-
-            const Divider(height: 1),
-
-            // --- ДЗЕРКАЛЬНІ КОЛОНКИ ---
-            Container(
-              color: Colors.grey.shade50,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'ЗАПЛАНОВАНО',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: project.state != ProjectState.planned
-                                  ? null
-                                  : () {
-                                      _showEditDialog(
-                                        title: 'Редагувати заплановане',
-                                        initialDate: project.plannedDeadline,
-                                        initialIncome: project.plannedIncome,
-                                        initialHours: project.plannedHours,
-                                        currency: project.currency,
-                                        onSave: (date, income, hours) {
-                                          context
-                                              .read<ProjectProvider>()
-                                              .updateProject(
-                                                project.copyWith(
-                                                  plannedDeadline: date,
-                                                  plannedIncome: income,
-                                                  plannedHours: hours,
-                                                ),
-                                              );
-                                        },
-                                      );
-                                    },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildReadOnlyField(
-                          label: 'Дедлайн',
-                          value: _formatDate(project.plannedDeadline) ?? '—',
-                        ),
-                        _buildReadOnlyField(
-                          label: 'Дохід',
-                          value:
-                              project.plannedIncome != null &&
-                                  project.plannedIncome != 0.0
-                              ? '${project.plannedIncome} ${project.currency}'
-                              : '—',
-                        ),
-                        _buildReadOnlyField(
-                          label: 'Час виконання',
-                          value:
-                              project.plannedHours != null &&
-                                  project.plannedHours != 0.0
-                              ? '${project.plannedHours} год'
-                              : '—',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 160,
-                    color: Colors.grey.shade300,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'ФАКТИЧНО',
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed:
-                                  project.state != ProjectState.inProgress
-                                  ? null
-                                  : () {
-                                      _showEditDialog(
-                                        title: 'Редагувати фактичне',
-                                        initialDate: project.actualDeadline,
-                                        initialIncome: project.actualIncome,
-                                        initialHours: project.actualHours,
-                                        currency: project.currency,
-                                        onSave: (date, income, hours) {
-                                          context
-                                              .read<ProjectProvider>()
-                                              .updateProject(
-                                                project.copyWith(
-                                                  actualDeadline: date,
-                                                  actualIncome: income,
-                                                  actualHours: hours,
-                                                ),
-                                              );
-                                        },
-                                      );
-                                    },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildReadOnlyField(
-                          label: 'Дедлайн',
-                          value: _formatDate(project.actualDeadline) ?? '—',
-                          isBold: true,
-                        ),
-                        _buildReadOnlyField(
-                          label: 'Дохід',
-                          value:
-                              project.actualIncome != null &&
-                                  project.actualIncome != 0
-                              ? '${project.actualIncome} ${project.currency}'
-                              : '—',
-                          valueColor: (project.actualIncome ?? 0) > 0
-                              ? Colors.green
-                              : null,
-                        ),
-                        _buildReadOnlyField(
-                          label: 'Час виконання',
-                          value:
-                              project.actualHours != null &&
-                                  project.actualHours != 0.0
-                              ? '${project.actualHours} год'
-                              : '—',
-                          valueColor:
-                              (project.plannedHours != null &&
-                                  (project.actualHours ?? 0) >
-                                      (project.plannedHours ?? 0))
-                              ? Colors.red
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // --- ЕКШЕНИ ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ElevatedButton(
-                    onPressed: project.state == ProjectState.planned
-                        ? () => context.read<ProjectProvider>().startProject(
-                            project.id,
-                          )
-                        : null,
-                    child: const Text('Почати'),
-                  ),
-                  ElevatedButton(
-                    onPressed: project.state == ProjectState.inProgress
-                        ? () => context.read<ProjectProvider>().finishProject(
-                            project.id,
-                          )
-                        : null,
-                    child: const Text('Завершити'),
-                  ),
-                  ElevatedButton(
-                    onPressed: project.state == ProjectState.inProgress
-                        ? () => context.read<ProjectProvider>().cancelProject(
-                            project.id,
-                          )
-                        : null,
-                    child: const Text('Скасувати'),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // --- РЕСУРСИ ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-              child: Text(
-                'РЕСУРСИ ПРОЕКТУ',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-
-            if (projectSpecs.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Center(child: Text('Ресурси ще не додані')),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: projectSpecs.length,
-                itemBuilder: (context, index) {
-                  final specification = projectSpecs[index];
-                  final itemType = projectItemTypes.firstWhere(
-                    (it) => it.id == specification.itemTypeId,
-                  );
-                  return ResourceSpecificationCard(
-                    specification: specification,
-                    itemType: itemType,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ResourceSpecificationScreen(
-                          specification: projectSpecs[index],
-                          projectStatus: project.state,
-                          itemType: itemType,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -508,7 +553,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text(title),
+              backgroundColor: AppColors.dialogBackground,
+              title: Text(title, style: TextStyle(color: AppColors.purple)),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -528,7 +574,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       },
                       child: InputDecorator(
                         decoration: InputDecoration(
-                          labelText: 'Термін (Дедлайн)',
+                          labelText: 'Deadline',
+                          labelStyle: TextStyle(color: AppColors.purple),
                           border: const OutlineInputBorder(),
                           // Якщо дата обрана, показуємо кнопку "Очистити", інакше іконку календаря
                           suffixIcon: selectedDate != null
@@ -539,16 +586,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     setState(() => selectedDate = null);
                                   },
                                 )
-                              : const Icon(Icons.calendar_today),
+                              : const Icon(
+                                  Icons.calendar_today,
+                                  color: AppColors.purple,
+                                ),
                         ),
                         child: Text(
                           selectedDate != null
                               ? _formatDate(selectedDate!)!
-                              : 'Не встановлено',
+                              : 'Not picked',
                           style: TextStyle(
                             color: selectedDate == null
-                                ? Colors.grey
-                                : Colors.black87,
+                                ? AppColors.purple
+                                : AppColors.pink,
                           ),
                         ),
                       ),
@@ -556,27 +606,33 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     const SizedBox(height: 16),
                     // Введення доходу
                     TextField(
+                      style: TextStyle(color: AppColors.purple),
                       controller: incomeController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       decoration: InputDecoration(
-                        labelText: 'Дохід',
+                        labelText: 'Revenue',
+                        labelStyle: TextStyle(color: AppColors.purple),
                         border: const OutlineInputBorder(),
                         suffixText: currency,
+                        suffixStyle: TextStyle(color: AppColors.purple),
                       ),
                     ),
                     const SizedBox(height: 16),
                     // Введення годин
                     TextField(
+                      style: TextStyle(color: AppColors.purple),
                       controller: hoursController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       decoration: const InputDecoration(
-                        labelText: 'Робочі години',
+                        labelText: 'Working hours',
+                        labelStyle: TextStyle(color: AppColors.purple),
                         border: OutlineInputBorder(),
-                        suffixText: 'год',
+                        suffixStyle: TextStyle(color: AppColors.purple),
+                        suffixText: 'h',
                       ),
                     ),
                   ],
@@ -585,9 +641,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Скасувати'),
+                  child: const Text('Reject'),
                 ),
-                ElevatedButton(
+                GradientButton(
+                  label: 'Save',
+                  width: 100,
                   onPressed: () {
                     final income = double.tryParse(incomeController.text);
                     final hours = double.tryParse(hoursController.text);
@@ -595,7 +653,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     onSave(selectedDate, income, hours);
                     Navigator.pop(context);
                   },
-                  child: const Text('Зберегти'),
                 ),
               ],
             );

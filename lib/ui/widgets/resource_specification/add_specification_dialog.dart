@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
@@ -27,15 +29,19 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: AppColors.primaryBackground,
       title: Column(
         children: [
-          const Text('Налаштування ресурсу', style: TextStyle(fontSize: 18)),
+          const Text(
+            'Resource settings',
+            style: TextStyle(fontSize: 18, color: AppColors.purple),
+          ),
           const SizedBox(height: 4),
           Text(
             widget.itemType.name,
             style: const TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              color: AppColors.pink,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -48,7 +54,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
           DropdownButtonFormField<ResourceType>(
             initialValue: _selectedType,
             decoration: const InputDecoration(
-              labelText: 'Тип використання',
+              labelText: 'Type of using',
               border: OutlineInputBorder(),
             ),
             items: const [
@@ -56,9 +62,9 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
                 value: ResourceType.material,
                 child: Row(
                   children: [
-                    Icon(Icons.layers, size: 16, color: Colors.blue),
+                    Icon(Icons.layers, size: 16, color: AppColors.cyan),
                     SizedBox(width: 8),
-                    Text('Матеріал'),
+                    Text('Material', style: TextStyle(color: AppColors.purple)),
                   ],
                 ),
               ),
@@ -66,9 +72,9 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
                 value: ResourceType.tool,
                 child: Row(
                   children: [
-                    Icon(Icons.handyman, size: 16, color: Colors.orange),
+                    Icon(Icons.handyman, size: 16, color: AppColors.pink),
                     SizedBox(width: 8),
-                    Text('Інструмент'),
+                    Text('Tool', style: TextStyle(color: AppColors.purple)),
                   ],
                 ),
               ),
@@ -83,7 +89,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
           CustomTextField(
             controller: _quantityController,
             labelText:
-                'Запланована кількість (${widget.itemType.displayMeasurementUnit})',
+                'Planned quantity (${widget.itemType.displayMeasurementUnit})',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
 
@@ -100,9 +106,12 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Скасувати'),
+          child: const Text(
+            'Reject',
+            style: TextStyle(color: AppColors.purple),
+          ),
         ),
-        ElevatedButton(onPressed: _submit, child: const Text('Додати')),
+        GradientButton(label: 'Add', onPressed: _submit, width: 100),
       ],
     );
   }

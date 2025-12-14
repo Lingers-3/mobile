@@ -2,11 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type_create_request.dart';
-import 'package:pocketeer_mobile/data/services/picture_service.dart';
+import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/unit.dart';
 import 'package:pocketeer_mobile/ui/widgets/tag_selector.dart';
 import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
+import 'package:provider/provider.dart';
 
 class AddItemTypeScreen extends StatefulWidget {
   const AddItemTypeScreen({super.key});
@@ -17,8 +18,6 @@ class AddItemTypeScreen extends StatefulWidget {
 
 class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final PictureService _pictures = PictureService();
 
   final _name = TextEditingController();
   final _description = TextEditingController();
@@ -53,10 +52,14 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
     });
 
     try {
-      final id = await _pictures.uploadPicture(_imageFile!);
-      setState(() => _pictureId = id);
+      final picture = await context.read<PictureProvider>().uploadPicture(
+        _imageFile!,
+      );
+      setState(() => _pictureId = picture.id);
     } finally {
-      setState(() => _uploading = false);
+      if (mounted) {
+        setState(() => _uploading = false);
+      }
     }
   }
 
@@ -84,6 +87,7 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
       appBar: AppBar(
+        iconTheme: IconThemeData(color: AppColors.purple),
         backgroundColor: AppColors.primaryBackground,
         title: const Text(
           "New Item Type",
@@ -164,7 +168,8 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
                 GestureDetector(
                   onTap: _uploading ? null : _pickImage,
                   child: Container(
-                    height: 240,
+                    height: 400,
+                    width: 400,
                     decoration: BoxDecoration(
                       color: AppColors.dialogBackground,
                       borderRadius: BorderRadius.circular(12),
