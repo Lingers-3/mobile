@@ -16,7 +16,7 @@ class ResourceSpecificationMock {
       id: 1,
       projectId: 1,
       itemTypeId: 61,
-      resourceType: ResourceType.material,
+      resourceType: ResourceType.consumable,
       plannedQuantity: 100.0,
     ),
   ];

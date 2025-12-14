@@ -21,7 +21,7 @@ class AddSpecificationDialog extends StatefulWidget {
 
 class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
   final _quantityController = TextEditingController();
-  ResourceType _selectedType = ResourceType.material;
+  ResourceType _selectedType = ResourceType.consumable;
   String? _errorText;
 
   @override
@@ -53,7 +53,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
             ),
             items: const [
               DropdownMenuItem(
-                value: ResourceType.material,
+                value: ResourceType.consumable,
                 child: Row(
                   children: [
                     Icon(Icons.layers, size: 16, color: Colors.blue),
