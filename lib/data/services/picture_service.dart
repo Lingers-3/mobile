@@ -50,7 +50,6 @@ class PictureService {
 
     final contentType = response.headers['content-type'] ?? '';
     if (contentType.contains('application/json')) {
-      // Go `encoding/json` encodes `[]byte` as base64 string.
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
         final content = decoded['content'];

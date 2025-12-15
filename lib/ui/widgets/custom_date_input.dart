@@ -36,7 +36,16 @@ class CustomDateInput extends StatelessWidget {
         );
       },
     );
-    onDateSelected(picked);
+    if (picked != null) {
+      final DateTime fixedDate = DateTime.utc(
+        picked.year,
+        picked.month,
+        picked.day,
+      );
+      onDateSelected(fixedDate);
+    } else {
+      onDateSelected(null);
+    }
   }
 
   @override
@@ -52,39 +61,65 @@ class CustomDateInput extends StatelessWidget {
             fontSize: 14,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
+
         InkWell(
           onTap: () => _selectDate(context),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBackground,
-              borderRadius: BorderRadius.circular(12),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: '',
+              labelStyle: const TextStyle(color: AppColors.purple),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)), //
+                borderSide: BorderSide(color: AppColors.purple),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(
+                  color: AppColors.purple.withOpacity(0.5),
+                ),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(color: AppColors.pink), // Активний колір
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 12,
+              ),
+
+              suffixIcon: selectedDate != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: AppColors.purple),
+                      onPressed: () => onDateSelected(null),
+                    )
+                  : const Icon(Icons.calendar_today, color: AppColors.purple),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  selectedDate == null
-                      ? 'Select date (optional)'
-                      : selectedDate!.toString().split(' ')[0],
-                  style: TextStyle(
-                    color: selectedDate == null
-                        ? AppColors.purple.withOpacity(0.7)
-                        : AppColors.purple,
-                    fontSize: 16,
-                  ),
-                ),
-                Icon(
-                  Icons.calendar_today,
-                  color: AppColors.purple.withOpacity(0.7),
-                ),
-              ],
+
+            // Вміст поля
+            child: Text(
+              selectedDate != null ? _formatDate(selectedDate!)! : 'Not picked',
+              style: TextStyle(
+                color: selectedDate == null
+                    ? AppColors.purple.withOpacity(0.7)
+                    : AppColors.pink,
+                fontSize: 16,
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 16),
       ],
     );
   }
+}
+
+String? _formatDate(DateTime? date) {
+  if (date == null) return null;
+  return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+}
+
+String? _formatDateTime(DateTime? date) {
+  if (date == null) return null;
+  return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 }

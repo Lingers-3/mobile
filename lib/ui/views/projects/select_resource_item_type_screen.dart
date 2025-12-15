@@ -64,6 +64,7 @@ class SelectResourceSpecificationScreen extends StatelessWidget {
                 return ItemTypeCard(
                   itemType: type,
                   isSelected: false,
+                  showMenu: false,
                   imageUrl: null,
                   pictureId: type.pictureId,
                   expirationStatus: itemProvider.getTypeExpirationStatus(

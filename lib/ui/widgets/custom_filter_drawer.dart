@@ -8,7 +8,6 @@ class CustomFilterDrawer extends StatelessWidget {
   final ValueChanged<String?> onSortChanged;
   final TextEditingController searchController;
   final double widthFactor;
-  // *** 1. НОВЕ ПОЛЕ ДЛЯ ОБРОБКИ ПОШУКУ ***
   final ValueChanged<String>? onSearchChanged;
 
   const CustomFilterDrawer({
@@ -18,7 +17,6 @@ class CustomFilterDrawer extends StatelessWidget {
     required this.onSortChanged,
     required this.searchController,
     this.widthFactor = 0.5,
-    // *** 2. ВИМАГАЄМО ЙОГО В КОНСТРУКТОРІ ***
     this.onSearchChanged,
   });
 
@@ -49,7 +47,6 @@ class CustomFilterDrawer extends StatelessWidget {
               CustomTextField(
                 controller: searchController,
                 labelText: 'Name Searching',
-                // *** 3. ПЕРЕДАЄМО КОЛБЕК В CustomTextField ***
                 onChanged: onSearchChanged,
               ),
 

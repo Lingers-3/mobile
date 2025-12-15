@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/data/models/items/item_update_request.dart';
@@ -70,6 +72,13 @@ class _EditItemScreenState extends State<EditItemScreen> {
         tagIds: _selectedTags,
       );
 
+      print('DEBUG: _expirationDate (State) = $_expirationDate');
+      try {
+        final jsonString = jsonEncode(req.toJson());
+        print('DEBUG: ItemUpdateRequest (JSON) = $jsonString');
+      } catch (e) {
+        print('DEBUG: Could not JSON encode request: $e');
+      }
       final updated = await _service.updateItem(widget.item.id, req);
 
       if (!mounted) return;
@@ -153,18 +162,9 @@ class _EditItemScreenState extends State<EditItemScreen> {
                   selectedDate: _expirationDate,
                   label: "Expiration date",
                   onDateSelected: (date) {
-                    if (date != null) {
-                      setState(() {
-                        _expirationDate = DateTime(
-                          date.year,
-                          date.month,
-                          date.day,
-                          12,
-                          0,
-                          0,
-                        );
-                      });
-                    }
+                    setState(() {
+                      _expirationDate = date;
+                    });
                   },
                 ),
 

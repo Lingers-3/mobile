@@ -108,10 +108,7 @@ class _ShowItemScreenState extends State<ShowItemScreen> {
           infoTile(
             "Expiration date",
             _item.expirationDate != null
-                ? (() {
-                    final d = _item.expirationDate!.toLocal();
-                    return "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
-                  })()
+                ? _formatDate(_item.expirationDate!)
                 : "-",
           ),
 
@@ -124,4 +121,9 @@ class _ShowItemScreenState extends State<ShowItemScreen> {
       ),
     );
   }
+}
+
+String _formatDate(DateTime date) {
+  final displayDate = date.toLocal();
+  return '${displayDate.day.toString().padLeft(2, '0')}.${displayDate.month.toString().padLeft(2, '0')}.${displayDate.year}';
 }

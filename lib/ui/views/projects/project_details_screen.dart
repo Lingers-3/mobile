@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_date_input.dart';
 import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
@@ -59,11 +60,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     final desc = project.description;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryBackground,
       // --- NAV HEADER ---
       appBar: AppBar(
         iconTheme: IconThemeData(color: AppColors.purple),
-        backgroundColor: AppColors.primaryBackground,
         title: Text(project.name, style: TextStyle(color: AppColors.purple)),
         centerTitle: true,
         actions: [
@@ -97,8 +96,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             ),
           );
         },
-        label: const Text('Add resource'),
-        icon: const Icon(Icons.add),
+        label: const Text(
+          'Add resource',
+          style: TextStyle(color: AppColors.primaryBackground),
+        ),
+        icon: const Icon(Icons.add, color: AppColors.primaryBackground),
       ),
       body: Container(
         color: AppColors.primaryBackground,
@@ -586,14 +588,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: AppColors.purple),
+          ),
           const SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(
               fontSize: 15,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: valueColor ?? Colors.black87,
+              color: valueColor ?? AppColors.pink,
             ),
           ),
         ],
@@ -630,49 +635,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // --- DATE FIELD ---
-                    InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate ?? DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setState(() => selectedDate = picked);
-                        }
+                    CustomDateInput(
+                      selectedDate: selectedDate,
+                      label: 'Deadline',
+                      onDateSelected: (newDate) {
+                        setState(() {
+                          selectedDate = newDate;
+                        });
                       },
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: 'Deadline',
-                          labelStyle: TextStyle(color: AppColors.purple),
-                          border: const OutlineInputBorder(),
-                          suffixIcon: selectedDate != null
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    setState(() => selectedDate = null);
-                                  },
-                                )
-                              : const Icon(
-                                  Icons.calendar_today,
-                                  color: AppColors.purple,
-                                ),
-                        ),
-                        child: Text(
-                          selectedDate != null
-                              ? _formatDate(selectedDate!)!
-                              : 'Not picked',
-                          style: TextStyle(
-                            color: selectedDate == null
-                                ? AppColors.purple
-                                : AppColors.pink,
-                          ),
-                        ),
-                      ),
                     ),
-
-                    const SizedBox(height: 16),
 
                     // --- REVENUE FIELD ---
                     TextField(
@@ -750,11 +721,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   Color _getStatusColor(ProjectState status) {
     switch (status) {
       case ProjectState.planned:
-        return Colors.grey;
+        return AppColors.purple;
       case ProjectState.inProgress:
-        return Colors.blue;
+        return AppColors.cyan;
       case ProjectState.completed:
-        return Colors.green;
+        return AppColors.pink;
       case ProjectState.cancelled:
         return Colors.red;
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_dialog.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_floating_button.dart';
 import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
@@ -80,31 +81,29 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return Scaffold(
       appBar: _isSelectionMode
           ? AppBar(
-              backgroundColor: AppColors.primaryBackground,
               leading: IconButton(
-                icon: const Icon(Icons.close, color: AppColors.purple),
+                icon: const Icon(Icons.close, color: AppColors.pink),
                 onPressed: _clearSelection,
               ),
               title: Text(
                 'Selected: ${_selectedProjectIds.length}',
-                style: const TextStyle(color: AppColors.purple),
+                style: const TextStyle(color: AppColors.pink),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(Icons.delete, color: AppColors.pink),
                   onPressed: () => _showDeleteSelectedDialog(context),
                 ),
               ],
             )
           : AppBar(
               centerTitle: true,
-              backgroundColor: AppColors.primaryBackground,
+
               title: const Text(
                 "Projects",
                 style: TextStyle(color: AppColors.purple),
               ), // Або ваш заголовок
             ),
-      backgroundColor: AppColors.primaryBackground,
 
       floatingActionButton: CustomFloatingButton(
         heroTag: 'projects_screen_fab',
@@ -116,7 +115,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               padding: const EdgeInsets.only(bottom: 80),
               children: [
                 if (inProgressProjects.isNotEmpty) ...[
-                  _buildSectionHeader('IN PROCESS', Colors.blue),
+                  _buildSectionHeader('IN PROCESS', AppColors.cyan),
                   ...inProgressProjects.map(
                     (p) => _buildProjectCard(context, p),
                   ),
@@ -124,13 +123,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ],
 
                 if (plannedProjects.isNotEmpty) ...[
-                  _buildSectionHeader('DRAFT', Colors.grey),
+                  _buildSectionHeader('DRAFT', AppColors.purple),
                   ...plannedProjects.map((p) => _buildProjectCard(context, p)),
                   const SizedBox(height: 16),
                 ],
 
                 if (completedProjects.isNotEmpty) ...[
-                  _buildSectionHeader('FINISHED', Colors.green),
+                  _buildSectionHeader('FINISHED', AppColors.pink),
                   ...completedProjects.map(
                     (p) => _buildProjectCard(context, p),
                   ),
@@ -200,7 +199,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
 
     String timeText = '-';
-    Color timeColor = Colors.grey.shade700;
+    Color timeColor = AppColors.purple;
     final plannedHours = project.plannedHours ?? 0;
     final actualHours = project.actualHours ?? 0;
 
@@ -212,11 +211,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           .toStringAsFixed(1)
           .replaceAll(RegExp(r'\.0$'), '');
 
-      timeText = '$actual/$planned год';
+      timeText = '$actual/$planned h';
     }
 
     String incomeText = '-';
-    Color incomeColor = Colors.grey.shade700;
+    Color incomeColor = AppColors.purple;
     final actualIncome = project.actualIncome;
 
     if (project.state == ProjectState.planned) {
@@ -270,6 +269,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           project.name,
                           style: const TextStyle(
                             fontSize: 16,
+                            color: AppColors.pink,
                             fontWeight: FontWeight.bold,
                           ),
                           maxLines: 1,
@@ -315,7 +315,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 desc.isNotEmpty ? desc : 'No description',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                style: TextStyle(color: AppColors.purple, fontSize: 13),
               ),
               const SizedBox(height: 10),
               const SizedBox(height: 16),
@@ -336,7 +336,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         '$dateLabel $dateValue',
                         style: TextStyle(
                           color: project.state != ProjectState.cancelled
-                              ? Colors.grey.shade500
+                              ? AppColors.purple
                               : Colors.red.shade500,
                           fontSize: 12,
                         ),
@@ -476,37 +476,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   void _showDeleteSelectedDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.dialogBackground,
-        title: const Text(
-          'Delete Projects',
-          style: TextStyle(color: AppColors.purple),
-        ),
-        content: Text(
-          'Delete ${_selectedProjectIds.length} projects? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final provider = context.read<ProjectProvider>();
-              final idsToDelete = _selectedProjectIds.toList();
+      builder: (ctx) {
+        return CustomDialog(
+          label: 'Delete Projects',
+          confirmationText:
+              'Delete ${_selectedProjectIds.length} projects? This action cannot be undone.',
 
-              Navigator.pop(ctx);
+          dialogFunction: () async {
+            final provider = context.read<ProjectProvider>();
+            final idsToDelete = _selectedProjectIds.toList();
 
-              for (final id in idsToDelete) {
-                await provider.deleteProject(id);
-              }
+            Navigator.pop(ctx);
 
-              _clearSelection();
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+            for (final id in idsToDelete) {
+              await provider.deleteProject(id);
+            }
+            _clearSelection();
+          },
+        );
+      },
     );
   }
 }

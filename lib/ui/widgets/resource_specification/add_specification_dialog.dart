@@ -53,6 +53,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
         children: [
           // Вибір типу ресурсу
           DropdownButtonFormField<ResourceType>(
+            dropdownColor: AppColors.primaryBackground,
             initialValue: _selectedResourceType,
             decoration: const InputDecoration(
               labelText: 'Type of using',

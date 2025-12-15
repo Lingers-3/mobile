@@ -24,6 +24,8 @@ class ItemTypeCard extends StatelessWidget {
 
   final double totalQuantity;
 
+  final bool showMenu;
+
   const ItemTypeCard({
     super.key,
     required this.itemType,
@@ -37,6 +39,7 @@ class ItemTypeCard extends StatelessWidget {
     required this.totalQuantity,
     required this.expirationStatus,
     this.isShortage = false,
+    this.showMenu = true,
   });
 
   @override
@@ -87,39 +90,40 @@ class ItemTypeCard extends StatelessWidget {
                   ),
                 ),
               ),
-            Positioned(
-              right: -9,
-              child: PopupMenuButton<String>(
-                color: AppColors.dialogBackground,
-                icon: const Icon(Icons.more_vert, color: AppColors.purple),
-                onSelected: (value) {
-                  switch (value) {
-                    case 'info':
-                      onOpen?.call();
-                      break;
-                    case 'delete':
-                      onDelete?.call();
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'info',
-                    child: Text(
-                      "Show info",
-                      style: TextStyle(color: AppColors.pink),
+            if (showMenu)
+              Positioned(
+                right: -9,
+                child: PopupMenuButton<String>(
+                  color: AppColors.dialogBackground,
+                  icon: const Icon(Icons.more_vert, color: AppColors.purple),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'info':
+                        onOpen?.call();
+                        break;
+                      case 'delete':
+                        onDelete?.call();
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'info',
+                      child: Text(
+                        "Show info",
+                        style: TextStyle(color: AppColors.pink),
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text(
-                      "Delete",
-                      style: TextStyle(color: AppColors.cyan),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        "Delete",
+                        style: TextStyle(color: AppColors.cyan),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
             Center(
               child: Column(
