@@ -3,12 +3,14 @@ import 'package:pocketeer_mobile/theme/app_theme.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
+
   final String labelText;
   final String? hintText;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
   final int maxLines;
   final bool autofocus;
+  final ValueChanged<String>? onChanged;
 
   const CustomTextField({
     super.key,
@@ -18,7 +20,8 @@ class CustomTextField extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.validator,
     this.maxLines = 1,
-    this.autofocus = false
+    this.autofocus = false,
+    this.onChanged,
   });
 
   @override
@@ -29,6 +32,7 @@ class CustomTextField extends StatelessWidget {
       maxLines: maxLines,
       style: const TextStyle(color: AppColors.pink),
       validator: validator,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/unit.dart';
+import 'package:pocketeer_mobile/ui/widgets/custom_filter_drawer.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_floating_button.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +26,55 @@ class _InventoryScreenState extends State<InventoryScreen>
     with AutomaticKeepAliveClientMixin {
   final Set<int> _selected = {};
 
+  String _searchQuery = '';
+  String _sortCriteria = 'date_desc';
+  final TextEditingController _searchController = TextEditingController();
+
+  void _setSortCriteria(String? newCriteria) {
+    if (newCriteria != null) {
+      setState(() {
+        _sortCriteria = newCriteria;
+      });
+    }
+  }
+
+  void _onSearchChanged(String newQuery) {
+    setState(() {
+      _searchQuery = newQuery;
+    });
+  }
+
+  List<ItemType> _getFilteredAndSortedItemTypes(List<ItemType> originalList) {
+    print(
+      'Filtering started. Original count: ${originalList.length}. Query: $_searchQuery',
+    );
+    List<ItemType> filteredList = originalList;
+
+    if (_searchQuery.isNotEmpty) {
+      filteredList = filteredList.where((itemType) {
+        return itemType.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      }).toList();
+    }
+
+    filteredList.sort((a, b) {
+      switch (_sortCriteria) {
+        case 'name_asc':
+          return a.name.compareTo(b.name);
+        case 'name_desc':
+          return b.name.compareTo(a.name);
+        case 'date_asc':
+          return a.createdAt.compareTo(b.createdAt);
+        case 'date_desc':
+          return b.createdAt.compareTo(a.createdAt);
+      }
+
+      return 0;
+    });
+
+    print('Filtering finished. Filtered count: ${filteredList.length}');
+    return filteredList;
+  }
+
   Future<bool> _confirmDelete({required String message}) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -49,6 +99,7 @@ class _InventoryScreenState extends State<InventoryScreen>
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() async {
       final itemProvider = context.read<ItemProvider>();
       final typeProvider = context.read<ItemTypeProvider>();
@@ -58,6 +109,12 @@ class _InventoryScreenState extends State<InventoryScreen>
 
       typeProvider.attachItems(itemProvider.items);
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _toggleSelection(int id) {
@@ -133,11 +190,16 @@ class _InventoryScreenState extends State<InventoryScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final provider = context.watch<ItemTypeProvider>();
-    final itemTypes = provider.itemTypes;
+    final originalItemTypes = provider.itemTypes;
     final loading = provider.loading;
+
+    final itemTypes = _getFilteredAndSortedItemTypes(originalItemTypes);
 
     return Scaffold(
       appBar: AppBar(
+        leading: null,
+        automaticallyImplyLeading: false,
+
         title: Text(
           _selected.isEmpty ? "" : "${_selected.length} selected",
           style: const TextStyle(color: AppColors.pink),
@@ -152,63 +214,112 @@ class _InventoryScreenState extends State<InventoryScreen>
               ]
             : [],
       ),
-      floatingActionButton: CustomFloatingButton(onPressed: _openAddItemType),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(8),
-              child: GridView.builder(
-                itemCount: itemTypes.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.78,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemBuilder: (_, i) {
-                  final itemType = itemTypes[i];
-                  final isSelected = _selected.contains(itemType.id);
-                  final total = context.watch<ItemProvider>().getTotalQuantity(
-                    itemType.id,
-                    itemType.baseMeasurementUnit,
-                    itemType.displayMeasurementUnit,
-                  );
-                  final expirationStatus = context
-                      .watch<ItemProvider>()
-                      .getTypeExpirationStatus(itemType.id);
-                  final threshold = itemType.shortageThreshold;
-                  final isShortage = () {
-                    if (threshold == null || threshold <= 0) return false;
-                    final baseUnit = findUnit(itemType.baseMeasurementUnit);
-                    final displayUnit = findUnit(
-                      itemType.displayMeasurementUnit,
-                    );
-                    final convertedThreshold = convert(
-                      threshold,
-                      baseUnit,
-                      displayUnit,
-                    );
-                    return total <= convertedThreshold;
-                  }();
 
-                  return ItemTypeCard(
-                    itemType: itemType,
-                    isSelected: isSelected,
-                    imageUrl: null,
-                    pictureId: itemType.pictureId,
-                    totalQuantity: total,
-                    expirationStatus: expirationStatus,
-                    isShortage: isShortage,
-                    onTap: () => _openItems(itemType),
-                    onLongPress: () => _toggleSelection(itemType.id),
-                    onOpen: () => _openShowInfo(itemType),
-                    onDelete: () {
-                      _deleteItemType(itemType);
+      drawer: CustomFilterDrawer(
+        searchController: _searchController,
+        currentSearchQuery: _searchQuery,
+        currentSortCriteria: _sortCriteria,
+        onSortChanged: _setSortCriteria,
+        widthFactor: 0.5,
+        onSearchChanged: _onSearchChanged,
+      ),
+
+      floatingActionButton: CustomFloatingButton(onPressed: _openAddItemType),
+
+      body: Stack(
+        children: [
+          loading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: GridView.builder(
+                    itemCount: itemTypes.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.78,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                    itemBuilder: (_, i) {
+                      final itemType = itemTypes[i];
+                      final isSelected = _selected.contains(itemType.id);
+                      final itemProvider = context.watch<ItemProvider>();
+                      final total = itemProvider.getTotalQuantity(
+                        itemType.id,
+                        itemType.baseMeasurementUnit,
+                        itemType.displayMeasurementUnit,
+                      );
+                      final expirationStatus = itemProvider
+                          .getTypeExpirationStatus(itemType.id);
+
+                      final threshold = itemType.shortageThreshold;
+                      final isShortage = () {
+                        if (threshold == null || threshold <= 0) return false;
+                        final baseUnit = findUnit(itemType.baseMeasurementUnit);
+                        final displayUnit = findUnit(
+                          itemType.displayMeasurementUnit,
+                        );
+                        final convertedThreshold = convert(
+                          threshold,
+                          baseUnit,
+                          displayUnit,
+                        );
+                        return total <= convertedThreshold;
+                      }();
+
+                      return ItemTypeCard(
+                        itemType: itemType,
+                        isSelected: isSelected,
+                        imageUrl: null,
+                        pictureId: itemType.pictureId,
+                        totalQuantity: total,
+                        expirationStatus: expirationStatus,
+                        isShortage: isShortage,
+                        onTap: () => _openItems(itemType),
+                        onLongPress: () => _toggleSelection(itemType.id),
+                        onOpen: () => _openShowInfo(itemType),
+                        onDelete: () {
+                          _deleteItemType(itemType);
+                        },
+                      );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+
+          Positioned(
+            left: 0,
+            top: MediaQuery.of(context).size.height * 0.3,
+            child: Builder(
+              builder: (innerContext) {
+                return IconButton(
+                  icon: const Icon(
+                    Icons.filter_list,
+                    color: AppColors.pink,
+                    size: 30,
+                  ),
+                  style: IconButton.styleFrom(
+                    shadowColor: AppColors.pink,
+                    backgroundColor: AppColors.primaryBackground,
+                    minimumSize: const Size(40, 60),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(10),
+                        bottomRight: Radius.circular(10),
+                      ),
+                    ),
+                    padding: const EdgeInsets.only(right: 12),
+                    elevation: 4, // Небольшая тень
+                  ),
+                  onPressed: () {
+                    Scaffold.of(innerContext).openDrawer();
+                  },
+                );
+              },
             ),
+          ),
+        ],
+      ),
     );
   }
 }

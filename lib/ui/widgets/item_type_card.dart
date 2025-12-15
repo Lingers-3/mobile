@@ -60,6 +60,13 @@ class ItemTypeCard extends StatelessWidget {
       onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.pink,
+              blurRadius: 1,
+              offset: Offset(1, 0),
+            ),
+          ],
           color: AppColors.dialogBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderColor, width: 2),
@@ -81,7 +88,7 @@ class ItemTypeCard extends StatelessWidget {
                 ),
               ),
             Positioned(
-              right: -7,
+              right: -9,
               child: PopupMenuButton<String>(
                 color: AppColors.dialogBackground,
                 icon: const Icon(Icons.more_vert, color: AppColors.purple),
