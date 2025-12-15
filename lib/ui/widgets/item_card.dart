@@ -41,24 +41,30 @@ class ItemCard extends StatelessWidget {
       child: Icon(Icons.image, size: 70, color: AppColors.purple),
     );
 
-    final pictureId = context.select<ItemTypeProvider, int?>((provider) {
+    // !!! ЗМІНА: Отримуємо pictureHash, а не pictureId !!!
+    final pictureHash = context.select<ItemTypeProvider, String?>((provider) {
       final idx = provider.itemTypes.indexWhere((t) => t.id == item.itemTypeId);
       if (idx == -1) return null;
-      return provider.itemTypes[idx].pictureId;
+      // Припускаємо, що ItemType містить pictureHash
+      return provider.itemTypes[idx].pictureHash;
     });
 
-    if (pictureId == null) return placeholder;
+    if (pictureHash == null) return placeholder;
 
     final pictureProvider = context.read<PictureProvider>();
-    final cachedBytes = pictureProvider.getCachedPictureBytes(pictureId);
+    // !!! ЗМІНА: Використовуємо getCachedPictureBytesByHash !!!
+    final cachedBytes = pictureProvider.getCachedPictureBytesByHash(
+      pictureHash,
+    );
     if (cachedBytes != null) {
       return SizedBox.expand(
         child: Image.memory(cachedBytes, fit: BoxFit.cover),
       );
     }
 
+    // !!! ЗМІНА: Використовуємо getPictureBytesByHash !!!
     return FutureBuilder<Uint8List>(
-      future: pictureProvider.getPictureBytes(pictureId),
+      future: pictureProvider.getPictureBytesByHash(pictureHash),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -74,6 +80,7 @@ class ItemCard extends StatelessWidget {
     );
   }
 
+  // ... (решта коду build без змін)
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

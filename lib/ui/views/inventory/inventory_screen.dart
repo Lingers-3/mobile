@@ -271,8 +271,6 @@ class _InventoryScreenState extends State<InventoryScreen>
                       return ItemTypeCard(
                         itemType: itemType,
                         isSelected: isSelected,
-                        imageUrl: null,
-                        pictureId: itemType.pictureId,
                         totalQuantity: total,
                         expirationStatus: expirationStatus,
                         isShortage: isShortage,

@@ -31,53 +31,20 @@ class PictureService {
     return Picture.fromJson(jsonDecode(body));
   }
 
-  Future<Uint8List> getPictureBytes(int id) async {
+  Future<Uint8List> getPictureBytes(String hash) async {
     final token = _authService.ensureToken();
 
-    final uri = Uri.parse("${AppConstants.apiBaseUrl}/pictures/$id");
+    final uri = Uri.parse("${AppConstants.baseUrl}/pictures/$hash");
 
     final response = await http.get(
       uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'image/*,application/json',
-      },
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'image/*'},
     );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to load picture bytes (${response.statusCode})');
     }
 
-    final contentType = response.headers['content-type'] ?? '';
-    if (contentType.contains('application/json')) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic>) {
-        final content = decoded['content'];
-        if (content is String && content.isNotEmpty) {
-          return base64Decode(content);
-        }
-      }
-
-      throw Exception('Picture response JSON has no `content`');
-    }
-
     return response.bodyBytes;
-  }
-
-  Future<Picture> getPicture(int id) async {
-    final token = _authService.ensureToken();
-
-    final uri = Uri.parse("${AppConstants.apiBaseUrl}/pictures/$id");
-
-    final response = await http.get(
-      uri,
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load picture');
-    }
-
-    return Picture.fromJson(jsonDecode(response.body));
   }
 }

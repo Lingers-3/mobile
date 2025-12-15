@@ -37,6 +37,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
   late List<int> _selectedTags;
 
   File? _imageFile;
+  String? _pictureHash;
   int? _pictureId;
   bool _uploadingImage = false;
 
@@ -65,7 +66,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
     );
 
     _selectedTags = [...widget.itemType.tagIds];
-    _pictureId = widget.itemType.pictureId;
+    _pictureHash = widget.itemType.pictureHash;
   }
 
   @override
@@ -92,7 +93,10 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
         _imageFile!,
       );
       if (!mounted) return;
-      setState(() => _pictureId = picture.id);
+      setState(() {
+        _pictureId = picture.id;
+        _pictureHash = picture.hash;
+      });
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
     }
@@ -172,7 +176,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
                       ? FutureBuilder<Uint8List>(
                           future: context
                               .read<PictureProvider>()
-                              .getPictureBytes(_pictureId!),
+                              .getPictureBytesByHash(_pictureHash!),
                           builder: (context, snapshot) {
                             final bytes = snapshot.data;
                             if (bytes != null) {

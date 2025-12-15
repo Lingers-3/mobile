@@ -7,6 +7,7 @@ class ItemType {
   final double? defaultQuantity;
   final double? shortageThreshold;
   final int? pictureId;
+  final String? pictureHash; // <--- НОВЕ ПОЛЕ ДЛЯ ОПТИМІЗАЦІЇ
   final List<int> itemIds;
   final List<int> tagIds;
   final DateTime createdAt;
@@ -24,6 +25,7 @@ class ItemType {
     this.defaultQuantity,
     this.shortageThreshold,
     this.pictureId,
+    this.pictureHash, // <--- Додали в конструктор
     required this.itemIds,
     required this.tagIds,
     required this.createdAt,
@@ -42,6 +44,7 @@ class ItemType {
       defaultQuantity: (json['default_quantity'] as num?)?.toDouble(),
       shortageThreshold: (json['shortage_threshold'] as num?)?.toDouble(),
       pictureId: json['picture_id'] as int?,
+      pictureHash: json['picture_hash'] as String?, // <--- ПАРСИНГ HASH
       itemIds: (json['item_ids'] as List<dynamic>? ?? const [])
           .map((e) => e as int)
           .toList(),
@@ -66,6 +69,7 @@ class ItemType {
       'default_quantity': defaultQuantity,
       'shortage_threshold': shortageThreshold,
       'picture_id': pictureId,
+      'picture_hash': pictureHash, // <--- Додали в toJson
       'item_ids': itemIds,
       'tag_ids': tagIds,
       'created_at': createdAt.toUtc().toIso8601String(),

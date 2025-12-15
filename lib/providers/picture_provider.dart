@@ -8,8 +8,12 @@ class PictureProvider extends ChangeNotifier {
   final PictureService _pictureService = PictureService();
   PictureService get pictureService => _pictureService;
 
+  // Кеш для метаданих зображень (Picture objects)
   final List<Picture> _pictures = [];
-  final Map<int, Uint8List> _pictureBytesCache = <int, Uint8List>{};
+
+  // !!! ЗМІНА: Кешування байтів тепер відбувається за Hash (String) !!!
+  final Map<String, Uint8List> _pictureBytesCache = <String, Uint8List>{};
+
   bool _isLoading = false;
   String? _error;
 
@@ -17,7 +21,9 @@ class PictureProvider extends ChangeNotifier {
   bool get loading => _isLoading;
   String? get errorMessage => _error;
 
-  Uint8List? getCachedPictureBytes(int id) => _pictureBytesCache[id];
+  // !!! ЗМІНА: Допоміжний метод тепер приймає Hash !!!
+  Uint8List? getCachedPictureBytesByHash(String hash) =>
+      _pictureBytesCache[hash];
 
   void _upsertPicture(Picture picture) {
     final idx = _pictures.indexWhere((p) => p.id == picture.id);
@@ -25,23 +31,6 @@ class PictureProvider extends ChangeNotifier {
       _pictures.add(picture);
     } else {
       _pictures[idx] = picture;
-    }
-  }
-
-  Future<Picture?> getPicture(int id) async {
-    final existing = _pictures.where((p) => p.id == id).toList();
-    if (existing.isNotEmpty) {
-      return existing.first;
-    }
-
-    try {
-      _error = null;
-      final picture = await _pictureService.getPicture(id);
-      _upsertPicture(picture);
-      return picture;
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
     }
   }
 
@@ -63,12 +52,15 @@ class PictureProvider extends ChangeNotifier {
     }
   }
 
-  Future<Uint8List> getPictureBytes(int id) async {
-    final cached = _pictureBytesCache[id];
-    if (cached != null) return cached;
+  // !!! НОВИЙ ОПТИМІЗОВАНИЙ МЕТОД: ЗАВЖДИ ВИКОРИСТОВУЙТЕ ЙОГО !!!
+  Future<Uint8List> getPictureBytesByHash(String hash) async {
+    final cached = _pictureBytesCache[hash];
+    if (cached != null) return cached; // Швидкий доступ до кешу
 
-    final bytes = await _pictureService.getPictureBytes(id);
-    _pictureBytesCache[id] = bytes;
+    // Виклик оптимізованого методу в PictureService (один HTTP-запит)
+    final bytes = await _pictureService.getPictureBytes(hash);
+
+    _pictureBytesCache[hash] = bytes; // Кешування за хешем
     return bytes;
   }
 }

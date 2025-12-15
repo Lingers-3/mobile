@@ -43,7 +43,9 @@ class _AddItemTypeScreenState extends State<AddItemTypeScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
+
     final file = await picker.pickImage(source: ImageSource.gallery);
+
     if (file == null) return;
 
     setState(() {

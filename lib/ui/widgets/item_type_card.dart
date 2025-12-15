@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
-import 'package:pocketeer_mobile/data/models/picture.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/unit.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
@@ -12,8 +11,11 @@ import 'package:provider/provider.dart';
 class ItemTypeCard extends StatelessWidget {
   final ItemType itemType;
   final bool isSelected;
-  final String? imageUrl;
-  final int? pictureId;
+
+  // !!! ВИДАЛЕНО: imageUrl та pictureId (вони є в itemType) !!!
+  // final String? imageUrl;
+  // final int? pictureId;
+
   final ItemExpirationStatus expirationStatus;
   final bool isShortage;
 
@@ -30,8 +32,9 @@ class ItemTypeCard extends StatelessWidget {
     super.key,
     required this.itemType,
     required this.isSelected,
-    required this.imageUrl,
-    this.pictureId,
+    // !!! ВИДАЛЕНО З КОНСТРУКТОРА !!!
+    // required this.imageUrl,
+    // this.pictureId,
     this.onTap,
     this.onLongPress,
     this.onOpen,
@@ -40,6 +43,7 @@ class ItemTypeCard extends StatelessWidget {
     required this.expirationStatus,
     this.isShortage = false,
     this.showMenu = true,
+    // !!! АРГУМЕНТИ ВИДАЛЕНО, ПЕРЕВІРТЕ ВСІ ВИКЛИКИ ItemTypeCard В КОДІ !!!
   });
 
   @override
@@ -191,41 +195,35 @@ class ItemTypeCard extends StatelessWidget {
       size: 40,
     );
 
+    final pictureHash =
+        itemType.pictureHash; // <--- ВИКОРИСТОВУЄМО HASH З itemType
+
+    if (pictureHash == null) {
+      return _imageContainer(icon: placeholder); // Немає зображення
+    }
+
     final provider = context.read<PictureProvider>();
-    Picture? cached;
-    if (pictureId != null) {
-      try {
-        cached = provider.pictures.firstWhere((p) => p.id == pictureId);
-      } catch (_) {
-        cached = null;
-      }
-    }
-    final resolvedUrl = imageUrl ?? cached?.url;
 
-    if (resolvedUrl != null) {
-      return _imageContainer(image: NetworkImage(resolvedUrl));
-    }
-
-    if (pictureId == null) {
-      return _imageContainer(icon: placeholder);
-    }
-
-    final cachedBytes = provider.getCachedPictureBytes(pictureId!);
+    // 1. ПЕРЕВІРКА КЕШУ: ВИКОРИСТОВУЄМО getCachedPictureBytesByHash
+    final cachedBytes = provider.getCachedPictureBytesByHash(pictureHash);
     if (cachedBytes != null) {
-      return _imageContainer(image: MemoryImage(cachedBytes));
+      return _imageContainer(image: MemoryImage(cachedBytes)); // З кешу
     }
 
+    // 2. ЗАВАНТАЖЕННЯ: ВИКОРИСТОВУЄМО getPictureBytesByHash
     return FutureBuilder<Uint8List>(
-      future: provider.getPictureBytes(pictureId!),
+      future: provider.getPictureBytesByHash(pictureHash),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _imageContainer(loading: true);
+          return _imageContainer(loading: true); // Завантаження
         }
         final bytes = snapshot.data;
         if (bytes != null) {
-          return _imageContainer(image: MemoryImage(bytes));
+          return _imageContainer(
+            image: MemoryImage(bytes),
+          ); // Успішно завантажено
         }
-        return _imageContainer(icon: placeholder);
+        return _imageContainer(icon: placeholder); // Помилка/Відсутність даних
       },
     );
   }

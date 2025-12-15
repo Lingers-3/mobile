@@ -1,5 +1,6 @@
 class Picture {
   final int id;
+  final String hash;
   final String fileName;
   final String mimeType;
   final int size;
@@ -8,6 +9,7 @@ class Picture {
 
   Picture({
     required this.id,
+    required this.hash,
     required this.fileName,
     required this.mimeType,
     required this.size,
@@ -17,10 +19,12 @@ class Picture {
 
   factory Picture.fromJson(Map<String, dynamic> json) {
     final id = (json['id'] as num).toInt();
+    final hash = (json['hash'] as String?) ?? '';
     final url = (json['url'] as String?) ?? (json['file_url'] as String?);
 
     return Picture(
       id: id,
+      hash: hash,
       fileName:
           (json['file_name'] as String?) ??
           (json['original_filename'] as String?) ??
@@ -37,6 +41,7 @@ class Picture {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'hash': hash,
       'file_name': fileName,
       'mime_type': mimeType,
       'size': size,

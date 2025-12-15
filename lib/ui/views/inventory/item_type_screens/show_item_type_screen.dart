@@ -79,9 +79,9 @@ class _ShowItemTypeScreenState extends State<ShowItemTypeScreen> {
               child: _itemType.pictureId == null
                   ? const Icon(Icons.image, color: AppColors.purple, size: 64)
                   : FutureBuilder<Uint8List>(
-                      future: context.read<PictureProvider>().getPictureBytes(
-                        _itemType.pictureId!,
-                      ),
+                      future: context
+                          .read<PictureProvider>()
+                          .getPictureBytesByHash(_itemType.pictureHash!),
                       builder: (context, snapshot) {
                         final bytes = snapshot.data;
                         if (bytes != null) {
