@@ -6,12 +6,11 @@ import 'package:pocketeer_mobile/providers/item_type_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/item_type_card.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_specification/add_specification_dialog.dart';
 
-class SelectResourceItemTypeScreen extends StatelessWidget {
-  // Додаємо параметр для фільтрації
+class SelectResourceSpecificationScreen extends StatelessWidget {
   final List<int> excludedItemTypeIds;
   final int projectId;
 
-  const SelectResourceItemTypeScreen({
+  const SelectResourceSpecificationScreen({
     super.key,
     this.excludedItemTypeIds = const [],
     required this.projectId,
@@ -84,7 +83,6 @@ class SelectResourceItemTypeScreen extends StatelessWidget {
                       Navigator.pop(context);
                     }
                   },
-                  // Вимикаємо зайві кнопки для режиму вибору
                   onDelete: null,
                   onOpen: null,
                   onLongPress: null,

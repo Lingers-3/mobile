@@ -40,7 +40,7 @@ class Picture {
       'file_name': fileName,
       'mime_type': mimeType,
       'size': size,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
       'url': url,
     };
   }

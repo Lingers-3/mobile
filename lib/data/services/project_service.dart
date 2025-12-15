@@ -84,7 +84,7 @@ class ProjectService {
     return project;
   }
 
-  Future<Project> updateProjectPlan(
+  Future<void> updateProjectPlan(
     int id,
     ProjectUpdatePlanRequest requestBody,
   ) async {
@@ -110,9 +110,6 @@ class ProjectService {
     }
 
     final data = jsonDecode(response.body);
-    final project = Project.fromJson(data);
-
-    return project;
   }
 
   Future<Project> updateProjectActual(
@@ -187,7 +184,7 @@ class ProjectService {
     );
     final response = await request;
 
-    if (response.statusCode != 200 || response.statusCode != 204) {
+    if (response.statusCode != 200 && response.statusCode != 204) {
       if (kDebugMode) {
         print('❌ Failed to delete project: ${response.statusCode}');
         print(response.body);
@@ -196,7 +193,7 @@ class ProjectService {
     }
   }
 
-  Future<Project> planResource(
+  Future<void> planResource(
     int id,
     ProjectPlanResourceRequest requestBody,
   ) async {
@@ -222,11 +219,6 @@ class ProjectService {
       }
       throw Exception('Failed to add resource specification to the plan');
     }
-
-    final data = jsonDecode(response.body);
-    final project = Project.fromJson(data);
-
-    return project;
   }
 
   Future<void> unplanResource(
@@ -244,7 +236,7 @@ class ProjectService {
     );
     final response = await request;
 
-    if (response.statusCode != 200 || response.statusCode != 204) {
+    if (response.statusCode != 200 && response.statusCode != 204) {
       if (kDebugMode) {
         print(
           '❌ Failed to delete resource specification from the plan: ${response.statusCode}',
@@ -303,7 +295,7 @@ class ProjectService {
     );
     final response = await request;
 
-    if (response.statusCode != 200 || response.statusCode != 204) {
+    if (response.statusCode != 200 && response.statusCode != 204) {
       if (kDebugMode) {
         print(
           '❌ Failed to remove resource specification from project: ${response.statusCode}',
@@ -322,7 +314,7 @@ class ProjectService {
     final token = _authService.ensureToken();
 
     final uri = Uri.parse(
-      '$projectsUrl/$projectId/resources/$resourceSpecificationId',
+      '$projectsUrl/$projectId/resources/$resourceSpecificationId/reservations',
     );
     final request = http.post(
       uri,
@@ -364,7 +356,7 @@ class ProjectService {
     );
     final response = await request;
 
-    if (response.statusCode != 200 || response.statusCode != 204) {
+    if (response.statusCode != 200 && response.statusCode != 204) {
       if (kDebugMode) {
         print('❌ Failed to free resource reservation: ${response.statusCode}');
         print(response.body);
@@ -374,7 +366,7 @@ class ProjectService {
   }
 
   // NOTE(saloway): may cause creation of new resource reservations
-  Future<Project> startProject(int id) async {
+  Future<void> startProject(int id) async {
     final token = _authService.ensureToken();
 
     final uri = Uri.parse('$projectsUrl/$id/start');
@@ -395,11 +387,6 @@ class ProjectService {
       }
       throw Exception('Failed to start project');
     }
-
-    final data = jsonDecode(response.body);
-    final project = Project.fromJson(data);
-
-    return project;
   }
 
   // NOTE(saloway): may cause change of items

@@ -21,7 +21,10 @@ class ItemUpdateRequest {
     if (description != null) data['description'] = description;
     if (quantity != null) data['quantity'] = quantity;
     if (expirationDate != null) {
-      data['expiration_date'] = expirationDate!.toUtc().toIso8601String();
+      data['expiration_date'] = expirationDate!
+          .toUtc()
+          .toUtc()
+          .toIso8601String();
     }
     if (displayMeasurementUnit != null) {
       data['display_measurement_unit'] = displayMeasurementUnit;

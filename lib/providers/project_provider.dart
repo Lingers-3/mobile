@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_requests.dart';
@@ -7,13 +9,15 @@ import 'package:pocketeer_mobile/data/services/project_service.dart';
 class ProjectProvider extends ChangeNotifier {
   final ProjectService _projectService = ProjectService();
 
-  List<Project> _projects = [];
+  Map<int, Project> _projectsById = {};
   bool _isLoading = false;
   String? _error;
 
-  List<Project> get projects => _projects;
+  List<Project> get projects => _projectsById.values.toList();
   bool get isLoading => _isLoading;
   String? get error => _error;
+  Project? getById(int id) => _projectsById[id];
+  Map<int, Project> get projectsById => UnmodifiableMapView(_projectsById);
 
   Future<void> fetchProjects() async {
     _isLoading = true;
@@ -21,23 +25,28 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _projects = await _projectService.getAllProjects();
+      final projects = await _projectService.getAllProjects();
+      _projectsById = _projectsById = {for (final p in projects) p.id: p};
     } catch (e) {
       _error = e.toString();
-      _projects = [];
+      _projectsById = {};
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> getProject(int id) async {
+  Future<void> fetchProject(int id, {bool force = false}) async {
+    if (!force && _projectsById.containsKey(id)) {
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
     try {
       final project = await _projectService.getProject(id);
-      _updateLocalProject(project);
+      _upsertProject(project);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -53,7 +62,7 @@ class ProjectProvider extends ChangeNotifier {
     try {
       final request = ProjectCreateRequest(name: name);
       final newProject = await _projectService.createProject(request);
-      _projects.add(newProject);
+      _projectsById[newProject.id] = newProject;
       return newProject;
     } catch (e) {
       _error = e.toString();
@@ -68,22 +77,19 @@ class ProjectProvider extends ChangeNotifier {
     int id,
     DateTime? plannedDeadline,
     double? plannedIncome,
-    double? plannedWorkTime,
+    int? plannedWorkTime,
   ) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final index = _projects.indexWhere((p) => p.id == id);
-      if (index != -1) {
-        final request = ProjectUpdatePlanRequest(
-          plannedDeadline: plannedDeadline,
-          plannedIncome: plannedIncome,
-          plannedWorkTime: plannedWorkTime,
-        );
-        final result = await _projectService.updateProjectPlan(id, request);
-        _projects[index] = result;
-      }
+      final request = ProjectUpdatePlanRequest(
+        plannedDeadline: plannedDeadline,
+        plannedIncome: plannedIncome,
+        plannedWorkTime: plannedWorkTime,
+      );
+      await _projectService.updateProjectPlan(id, request);
+      await fetchProject(id, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -96,22 +102,19 @@ class ProjectProvider extends ChangeNotifier {
     int id,
     DateTime? actualDeadline,
     double? actualIncome,
-    double? actualWorkTime,
+    int? actualWorkTime,
   ) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final index = _projects.indexWhere((p) => p.id == id);
-      if (index != -1) {
-        final request = ProjectUpdateActualRequest(
-          actualDeadline: actualDeadline,
-          actualIncome: actualIncome,
-          actualWorkTime: actualWorkTime,
-        );
-        final result = await _projectService.updateProjectActual(id, request);
-        _projects[index] = result;
-      }
+      final request = ProjectUpdateActualRequest(
+        actualDeadline: actualDeadline,
+        actualIncome: actualIncome,
+        actualWorkTime: actualWorkTime,
+      );
+      await _projectService.updateProjectActual(id, request);
+      await fetchProject(id, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -129,15 +132,12 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final index = _projects.indexWhere((p) => p.id == id);
-      if (index != -1) {
-        final request = ProjectUpdateRequest(
-          name: name,
-          description: description,
-        );
-        final result = await _projectService.updateProjectInfo(id, request);
-        _projects[index] = result;
-      }
+      final request = ProjectUpdateRequest(
+        name: name,
+        description: description,
+      );
+      await _projectService.updateProjectInfo(id, request);
+      await fetchProject(id, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -152,7 +152,7 @@ class ProjectProvider extends ChangeNotifier {
 
     try {
       await _projectService.deleteProject(id);
-      _projects.removeWhere((p) => p.id == id);
+      _projectsById.remove(id);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -164,8 +164,8 @@ class ProjectProvider extends ChangeNotifier {
   Future<void> planResource(
     int projectId,
     int itemTypeId,
-    double plannedQuantity,
     ResourceType resourceType,
+    double plannedQuantity,
   ) async {
     _isLoading = true;
     notifyListeners();
@@ -176,8 +176,8 @@ class ProjectProvider extends ChangeNotifier {
         plannedQuantity: plannedQuantity,
         resourceType: resourceType,
       );
-      final result = await _projectService.planResource(projectId, request);
-      _updateLocalProject(result);
+      await _projectService.planResource(projectId, request);
+      await fetchProject(projectId, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -198,7 +198,7 @@ class ProjectProvider extends ChangeNotifier {
         projectId,
         plannedResourceSpecificationId,
       );
-      await getProject(projectId);
+      await fetchProject(projectId, force: true);
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -210,6 +210,7 @@ class ProjectProvider extends ChangeNotifier {
     int projectId,
     int itemTypeId,
     ResourceType resourceType,
+    double plannedQuantity,
   ) async {
     _isLoading = true;
     notifyListeners();
@@ -218,12 +219,10 @@ class ProjectProvider extends ChangeNotifier {
       final request = ProjectAddResourceSpecificationRequest(
         itemTypeId: itemTypeId,
         resourceType: resourceType,
+        plannedQuantity: plannedQuantity,
       );
-      final result = await _projectService.addResourceSpecification(
-        projectId,
-        request,
-      );
-      _updateLocalProject(result);
+      await _projectService.addResourceSpecification(projectId, request);
+      await fetchProject(projectId, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -244,7 +243,7 @@ class ProjectProvider extends ChangeNotifier {
         projectId,
         resourceSpecificationId,
       );
-      await getProject(projectId);
+      await fetchProject(projectId, force: true);
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -268,12 +267,12 @@ class ProjectProvider extends ChangeNotifier {
         reservedQuantity: reservedQuantity,
         usedQuantity: usedQuantity,
       );
-      final result = await _projectService.reserveItem(
+      await _projectService.reserveItem(
         projectId,
         resourceSpecificationId,
         request,
       );
-      _updateLocalProject(result);
+      await fetchProject(projectId, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -296,7 +295,7 @@ class ProjectProvider extends ChangeNotifier {
         resourceSpecificationId,
         resourceReservationId,
       );
-      await getProject(projectId);
+      await fetchProject(projectId, force: true);
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -309,8 +308,8 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _projectService.startProject(id);
-      _updateLocalProject(result);
+      await _projectService.startProject(id);
+      await fetchProject(id, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -324,8 +323,8 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _projectService.finishProject(id);
-      _updateLocalProject(result);
+      await _projectService.finishProject(id);
+      await fetchProject(id, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -339,8 +338,8 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _projectService.cancelProject(id);
-      _updateLocalProject(result);
+      await _projectService.cancelProject(id);
+      await fetchProject(id, force: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -349,10 +348,7 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
-  void _updateLocalProject(Project project) {
-    final index = _projects.indexWhere((p) => p.id == project.id);
-    if (index != -1) {
-      _projects[index] = project;
-    }
+  void _upsertProject(Project project) {
+    _projectsById[project.id] = project;
   }
 }

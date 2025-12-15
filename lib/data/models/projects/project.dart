@@ -22,8 +22,8 @@ class Project {
   final double? actualIncome;
   final String currency;
 
-  final double? plannedHours;
-  final double? actualHours;
+  final int? plannedHours;
+  final int? actualHours;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -67,7 +67,8 @@ class Project {
     Object? actualHours = _undefined,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Object? specifications = _undefined, // Added support for updating specifications
+    Object? specifications =
+        _undefined, // Added support for updating specifications
   }) {
     return Project(
       id: id ?? this.id,
@@ -95,10 +96,10 @@ class Project {
       currency: currency ?? this.currency,
       plannedHours: plannedHours == _undefined
           ? this.plannedHours
-          : plannedHours as double?,
+          : plannedHours as int?,
       actualHours: actualHours == _undefined
           ? this.actualHours
-          : actualHours as double?,
+          : actualHours as int?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       specifications: specifications == _undefined
@@ -128,14 +129,14 @@ class Project {
       plannedIncome: (json['planned_income'] as num?)?.toDouble(),
       actualIncome: (json['actual_income'] as num?)?.toDouble(),
       currency: json['currency'] as String? ?? 'UAH',
-      plannedHours: (json['planned_hours'] as num?)?.toDouble(),
-      actualHours: (json['actual_hours'] as num?)?.toDouble(),
+      plannedHours: (json['planned_work_time'] as num?)?.toInt(),
+      actualHours: (json['actual_work_time'] as num?)?.toInt(),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
-      specifications: json['resource_specifications'] != null
-          ? (json['resource_specifications'] as List)
-              .map((e) => ResourceSpecification.fromJson(e))
-              .toList()
+      specifications: json['specifications'] != null
+          ? (json['specifications'] as List)
+                .map((e) => ResourceSpecification.fromJson(e))
+                .toList()
           : null,
     );
   }
@@ -146,18 +147,18 @@ class Project {
       'name': name,
       'description': description,
       'state': state.toJson(),
-      'planned_deadline': plannedDeadline?.toIso8601String(),
-      'actual_deadline': actualDeadline?.toIso8601String(),
-      'start_date': startDate?.toIso8601String(),
-      'end_date': endDate?.toIso8601String(),
+      'planned_deadline': plannedDeadline?.toUtc().toIso8601String(),
+      'actual_deadline': actualDeadline?.toUtc().toIso8601String(),
+      'start_date': startDate?.toUtc().toIso8601String(),
+      'end_date': endDate?.toUtc().toIso8601String(),
       'planned_income': plannedIncome,
       'actual_income': actualIncome,
       'currency': currency,
-      'planned_hours': plannedHours,
-      'actual_hours': actualHours,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      'resource_specifications': specifications?.map((e) => e.toJson()).toList(),
+      'planned_work_time': plannedHours,
+      'actual_work_time': actualHours,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'specifications': specifications?.map((e) => e.toJson()).toList(),
     };
   }
 }

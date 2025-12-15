@@ -5,10 +5,7 @@ import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
-import 'package:pocketeer_mobile/providers/item_provider.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:pocketeer_mobile/ui/views/projects/resource_specification_screen.dart';
 import 'package:pocketeer_mobile/ui/views/projects/select_resource_item_type_screen.dart';
@@ -16,9 +13,9 @@ import 'package:pocketeer_mobile/ui/views/projects/edit_project_screen.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_specification/resource_specification_card.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
-  final Project project;
+  final int projectId;
 
-  const ProjectDetailsScreen({super.key, required this.project});
+  const ProjectDetailsScreen({super.key, required this.projectId});
 
   @override
   State<ProjectDetailsScreen> createState() => _ProjectDetailsScreenState();
@@ -31,28 +28,28 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ItemTypeProvider>().loadItemTypes();
-      context.read<ItemProvider>().loadAllItems();
-      context.read<ResourceReservationProvider>().loadReservations();
+      context.read<ProjectProvider>().fetchProject(
+        widget.projectId,
+        force: true,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final project = context.watch<ProjectProvider>().projects.firstWhere(
-      (p) => p.id == widget.project.id,
-      orElse: () => widget.project,
+    final project = context.select<ProjectProvider, Project?>(
+      (pp) => pp.getById(widget.projectId),
     );
 
-    // Фільтруємо специфікації, які належать саме цьому проекту
-    final allSpecs = context
-        .watch<ResourceSpecificationProvider>()
-        .specifications;
-    final projectSpecs = allSpecs
-        .where((s) => s.projectId == project.id)
-        .toList();
+    if (project == null) {
+      // TODO(saloway): make it more clear, return on the projects screen, idk
+      return const Center(child: Text("The project is null"));
+    }
+
+    final projectSpecs = project.specifications ?? [];
+    // NOTE(saloway): may want to use filtered get all
     final projectItemTypes = context.select<ItemTypeProvider, List<ItemType>>(
-      (p) => p.itemTypes
+      (itp) => itp.itemTypes
           .where((it) => projectSpecs.any((rs) => rs.itemTypeId == it.id))
           .toList(),
     );
@@ -63,12 +60,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
+      // --- NAV HEADER ---
       appBar: AppBar(
         iconTheme: IconThemeData(color: AppColors.purple),
         backgroundColor: AppColors.primaryBackground,
         title: Text(project.name, style: TextStyle(color: AppColors.purple)),
         centerTitle: true,
         actions: [
+          // --- EDIT PROJECT ---
           IconButton(
             icon: const Icon(Icons.edit, color: AppColors.purple),
             onPressed: () {
@@ -82,15 +81,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           ),
         ],
       ),
+      // --- ADD RESOURCE BUTTON ---
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'project_details_fab_${project.id}',
-        backgroundColor: AppColors.pink, // Унікальний тег
+        backgroundColor: AppColors.pink,
         onPressed: () {
           final usedTypeIds = projectSpecs.map((s) => s.itemTypeId).toList();
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => SelectResourceItemTypeScreen(
+              builder: (_) => SelectResourceSpecificationScreen(
                 excludedItemTypeIds: usedTypeIds,
                 projectId: project.id,
               ),
@@ -112,13 +112,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 // --- HEADER ---
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          // -- PROJECT STATE CHIP ---
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -142,18 +142,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               ),
                             ),
                           ),
-                          if (dateInfo != null)
-                            Text(
-                              dateInfo,
-                              style: TextStyle(
-                                color: AppColors.purple,
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                              ),
+                          // -- PROJECT DATE INFO ---
+                          Text(
+                            dateInfo,
+                            style: TextStyle(
+                              color: AppColors.purple,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
                             ),
+                          ),
                         ],
                       ),
+
                       const SizedBox(height: 16),
+
+                      // --- DESCRIPTION ---
                       if (desc != null && desc.isNotEmpty) ...[
                         InkWell(
                           onTap: () => setState(
@@ -203,7 +206,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                 const Divider(height: 1),
 
-                // --- ДЗЕРКАЛЬНІ КОЛОНКИ ---
+                // --- PLAN / ACTUAL COLUMNS ---
                 Container(
                   color: AppColors.primaryBackground,
                   padding: const EdgeInsets.symmetric(
@@ -213,6 +216,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // --- PLAN COLUMN ---
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,6 +224,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
+                                // --- HEADER ---
                                 Text(
                                   'PLANNED',
                                   style: TextStyle(
@@ -229,6 +234,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     letterSpacing: 1.0,
                                   ),
                                 ),
+
+                                // --- EDIT BUTTON ---
                                 IconButton(
                                   icon: const Icon(
                                     Icons.edit,
@@ -247,26 +254,31 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                             initialHours: project.plannedHours,
                                             currency: project.currency,
                                             onSave: (date, income, hours) {
-                                              context
-                                                  .read<ProjectProvider>()
-                                                  .updateProjectPlan(
-                                                    project.id,
-                                                    date,
-                                                    income,
-                                                    hours,
-                                                  );
+                                              final projectProvider = context
+                                                  .read<ProjectProvider>();
+                                              projectProvider.updateProjectPlan(
+                                                project.id,
+                                                date,
+                                                income,
+                                                hours,
+                                              );
                                             },
                                           );
                                         },
                                 ),
                               ],
                             ),
+
                             const SizedBox(height: 16),
+
+                            // --- DEADLINE FIELD ---
                             _buildReadOnlyField(
                               label: 'Deadline',
                               value:
                                   _formatDate(project.plannedDeadline) ?? '—',
                             ),
+
+                            // --- REVENUE FIELD ---
                             _buildReadOnlyField(
                               label: 'Revenue',
                               value:
@@ -275,23 +287,28 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   ? '${project.plannedIncome} ${project.currency}'
                                   : '—',
                             ),
+
+                            // --- WORKING HOURS FIELD ---
                             _buildReadOnlyField(
                               label: 'Completion time',
                               value:
                                   project.plannedHours != null &&
                                       project.plannedHours != 0.0
-                                  ? '${project.plannedHours} год'
+                                  ? '${project.plannedHours} h'
                                   : '—',
                             ),
                           ],
                         ),
                       ),
+
                       Container(
                         width: 1,
                         height: 160,
                         color: AppColors.primaryBackground,
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                       ),
+
+                      // --- ACTUAL COLUMN ---
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,8 +316,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
+                                // --- HEADER ---
                                 Text(
-                                  'IN FACT',
+                                  'ACTUAL',
                                   style: TextStyle(
                                     color: AppColors.pink,
                                     fontWeight: FontWeight.bold,
@@ -308,6 +326,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     letterSpacing: 1.0,
                                   ),
                                 ),
+
+                                // --- EDIT BUTTON ---
                                 IconButton(
                                   icon: const Icon(
                                     Icons.edit,
@@ -338,12 +358,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 ),
                               ],
                             ),
+
                             const SizedBox(height: 16),
+
+                            // --- DEADLINE FIELD ---
                             _buildReadOnlyField(
                               label: 'Deadline',
                               value: _formatDate(project.actualDeadline) ?? '—',
                               isBold: true,
                             ),
+
+                            // --- REVENUE FIELD ---
                             _buildReadOnlyField(
                               label: 'Revenue',
                               value:
@@ -355,12 +380,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   ? Colors.green
                                   : null,
                             ),
+
+                            // --- WORKING HOURS FIELD ---
                             _buildReadOnlyField(
                               label: 'Completion time',
                               value:
                                   project.actualHours != null &&
                                       project.actualHours != 0.0
-                                  ? '${project.actualHours} год'
+                                  ? '${project.actualHours} h'
                                   : '—',
                               valueColor:
                                   (project.plannedHours != null &&
@@ -378,12 +405,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                 const Divider(height: 1),
 
-                // --- ЕКШЕНИ ---
+                // --- PROJECT STATE ACTIONS ---
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
+                      // --- START BUTTON ---
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
@@ -398,6 +426,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           style: TextStyle(color: AppColors.purple),
                         ),
                       ),
+                      // --- FINISH BUTTON ---
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
@@ -412,6 +441,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           style: TextStyle(color: AppColors.purple),
                         ),
                       ),
+                      // --- CANCEL BUTTON ---
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
@@ -430,9 +460,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
                 ),
 
+                // --- RESOURCES ---
+                // --- SECTION HEADER ---
                 const Divider(height: 1),
-
-                // --- РЕСУРСИ ---
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                   child: Text(
@@ -445,10 +475,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
                 ),
 
+                // --- LIST ---
                 if (projectSpecs.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(32.0),
-                    child: Center(child: Text('Resources not added yet')),
+                    child: Center(
+                      child: Text(
+                        'Resources not added yet',
+                        style: TextStyle(
+                          color: AppColors.purple,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
                   )
                 else
                   ListView.builder(
@@ -457,22 +496,54 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     itemCount: projectSpecs.length,
                     itemBuilder: (context, index) {
                       final specification = projectSpecs[index];
-                      final itemType = projectItemTypes.firstWhere(
-                        (it) => it.id == specification.itemTypeId,
-                      );
                       return ResourceSpecificationCard(
-                        specification: specification,
-                        itemType: itemType,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ResourceSpecificationScreen(
-                              specification: projectSpecs[index],
-                              projectStatus: project.state,
-                              itemType: itemType,
-                            ),
-                          ),
-                        ),
+                        projectId: widget.projectId,
+                        specificationId: specification.id,
+                        onTap: project.state != ProjectState.planned
+                            ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ResourceSpecificationScreen(
+                                    projectId: project.id,
+                                    specificationId: projectSpecs[index].id,
+                                  ),
+                                ),
+                              )
+                            : null,
+                        onEdit: project.state != ProjectState.planned
+                            ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ResourceSpecificationScreen(
+                                    projectId: project.id,
+                                    specificationId: projectSpecs[index].id,
+                                  ),
+                                ),
+                              )
+                            : null,
+                        onDelete: () async {
+                          try {
+                            final provider = context.read<ProjectProvider>();
+
+                            if (project.state != ProjectState.planned) {
+                              await provider.removeResourceSpecification(
+                                project.id,
+                                projectSpecs[index].id,
+                              );
+                            } else {
+                              await provider.unplanResource(
+                                project.id,
+                                projectSpecs[index].id,
+                              );
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Delete failed')),
+                            );
+                          }
+                        },
                       );
                     },
                   ),
@@ -484,21 +555,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  // --- Helpers (Ті самі, що і раніше) ---
-  String? _getProjectDateInfo(Project project) {
+  // --- Helpers ---
+  String _getProjectDateInfo(Project project) {
     switch (project.state) {
       case ProjectState.planned:
-        return 'Створено ${_formatDateTime(project.createdAt)}';
+        return 'Created at ${_formatDateTime(project.createdAt)}';
       case ProjectState.inProgress:
         return project.startDate != null
-            ? 'Розпочато ${_formatDateTime(project.startDate)}'
-            : 'Створено ${_formatDateTime(project.createdAt)}';
+            ? 'Started at ${_formatDateTime(project.startDate)}'
+            : 'Created at ${_formatDateTime(project.createdAt)}';
       case ProjectState.completed:
         return project.endDate != null
-            ? 'Завершено ${_formatDateTime(project.endDate)}'
-            : 'Завершено';
+            ? 'Finished at ${_formatDateTime(project.endDate)}'
+            : 'Finished';
       case ProjectState.cancelled:
-        return 'Скасовано';
+        return project.endDate != null
+            ? 'Canceled at ${_formatDateTime(project.endDate)}'
+            : 'Canceled';
     }
   }
 
@@ -532,12 +605,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     required String title,
     required DateTime? initialDate,
     required double? initialIncome,
-    required double? initialHours,
+    required int? initialHours,
     required String currency,
-    required Function(DateTime?, double?, double?) onSave,
+    required Function(DateTime?, double?, int?) onSave,
   }) async {
     DateTime? selectedDate = initialDate;
-    final incomeController = TextEditingController(
+    final revenueController = TextEditingController(
       text: initialIncome?.toString() ?? '',
     );
     final hoursController = TextEditingController(
@@ -556,7 +629,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Вибір дати з можливістю очищення
+                    // --- DATE FIELD ---
                     InkWell(
                       onTap: () async {
                         final picked = await showDatePicker(
@@ -574,12 +647,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           labelText: 'Deadline',
                           labelStyle: TextStyle(color: AppColors.purple),
                           border: const OutlineInputBorder(),
-                          // Якщо дата обрана, показуємо кнопку "Очистити", інакше іконку календаря
                           suffixIcon: selectedDate != null
                               ? IconButton(
                                   icon: const Icon(Icons.clear),
                                   onPressed: () {
-                                    // Очищаємо дату
                                     setState(() => selectedDate = null);
                                   },
                                 )
@@ -600,11 +671,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    // Введення доходу
+
+                    // --- REVENUE FIELD ---
                     TextField(
                       style: TextStyle(color: AppColors.purple),
-                      controller: incomeController,
+                      controller: revenueController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
@@ -616,8 +689,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         suffixStyle: TextStyle(color: AppColors.purple),
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    // Введення годин
+
+                    // --- WORKING HOURS FIELD ---
                     TextField(
                       style: TextStyle(color: AppColors.purple),
                       controller: hoursController,
@@ -635,18 +710,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ],
                 ),
               ),
+
               actions: [
+                // --- CANCEL BUTTON ---
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Reject'),
+                  child: const Text('Cancel'),
                 ),
+
+                // --- SAVE BUTTON ---
                 GradientButton(
                   label: 'Save',
                   width: 100,
                   onPressed: () {
-                    final income = double.tryParse(incomeController.text);
-                    final hours = double.tryParse(hoursController.text);
-                    // Передаємо selectedDate (який може бути null)
+                    final income = double.tryParse(revenueController.text);
+                    final hours = int.tryParse(hoursController.text);
                     onSave(selectedDate, income, hours);
                     Navigator.pop(context);
                   },
@@ -681,10 +759,4 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         return Colors.red;
     }
   }
-
-  void _startProject() {}
-
-  void _finishProject() {}
-
-  void _cancelProject() {}
 }

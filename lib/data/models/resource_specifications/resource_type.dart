@@ -4,27 +4,27 @@ enum ResourceType {
 
   String get label {
     switch (this) {
-      case ResourceType.tool:
-        return 'Tool';
       case ResourceType.consumable:
         return 'Consumable';
+      case ResourceType.tool:
+        return 'Instrument';
     }
   }
 
   String toJson() {
     switch (this) {
       case ResourceType.consumable:
-        return 'consumable';
+        return 'Consumable';
       case ResourceType.tool:
-        return 'tool';
+        return 'Instrument';
     }
   }
 
   static ResourceType fromJson(String json) {
     switch (json) {
-      case 'consumable':
+      case 'Consumable':
         return ResourceType.consumable;
-      case 'tool':
+      case 'Instrument':
         return ResourceType.tool;
       default:
         return ResourceType.consumable;

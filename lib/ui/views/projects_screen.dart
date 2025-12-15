@@ -17,6 +17,10 @@ class ProjectsScreen extends StatefulWidget {
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
+  final Set<int> _selectedProjectIds = {};
+
+  bool get _isSelectionMode => _selectedProjectIds.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -37,12 +41,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         .toList();
 
     inProgressProjects.sort((a, b) {
-      // Визначаємо ефективний дедлайн (пріоритет у фактичного, потім запланований)
+      // Визначаємо ефективний Deadline (пріоритет у фактичного, потім запланований)
       final dateA = a.actualDeadline ?? a.plannedDeadline;
       final dateB = b.actualDeadline ?? b.plannedDeadline;
 
       if (dateA == null && dateB == null) return 0;
-      if (dateA == null) return 1; // Без дедлайну - вниз
+      if (dateA == null) return 1; // Без Deadlineу - вниз
       if (dateB == null) return -1;
 
       return dateA.compareTo(dateB); // Від найближчого до найдальшого
@@ -74,13 +78,36 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        backgroundColor: AppColors.primaryBackground,
-      ),
+      appBar: _isSelectionMode
+          ? AppBar(
+              backgroundColor: AppColors.primaryBackground,
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: AppColors.purple),
+                onPressed: _clearSelection,
+              ),
+              title: Text(
+                'Selected: ${_selectedProjectIds.length}',
+                style: const TextStyle(color: AppColors.purple),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _showDeleteSelectedDialog(context),
+                ),
+              ],
+            )
+          : AppBar(
+              centerTitle: true,
+              backgroundColor: AppColors.primaryBackground,
+              title: const Text(
+                "Projects",
+                style: TextStyle(color: AppColors.purple),
+              ), // Або ваш заголовок
+            ),
       backgroundColor: AppColors.primaryBackground,
 
       floatingActionButton: CustomFloatingButton(
+        heroTag: 'projects_screen_fab',
         onPressed: () => _showCreateProjectDialog(context),
       ),
       body: allProjects.isEmpty
@@ -149,25 +176,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       case ProjectState.inProgress:
         final deadline = project.actualDeadline ?? project.plannedDeadline;
         if (deadline != null) {
-          dateLabel = 'Дедлайн:';
+          dateLabel = 'Deadline:';
           dateValue = _formatDate(deadline);
         } else {
-          dateLabel = 'Дедлайн:';
+          dateLabel = 'Deadline:';
           dateValue = '-';
         }
         break;
       case ProjectState.planned:
-        dateLabel = 'Створено:';
+        dateLabel = 'Created:';
         dateValue = _formatDate(project.createdAt);
         break;
       case ProjectState.completed:
-        dateLabel = 'Завершено:';
+        dateLabel = 'Completed:';
         dateValue = project.endDate != null
             ? _formatDate(project.endDate!)
             : '---';
         break;
       case ProjectState.cancelled:
-        dateLabel = 'Скасовано:';
+        dateLabel = 'Canceled:';
         dateValue = _formatDate(project.updatedAt);
         break;
     }
@@ -203,21 +230,30 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
     final desc = project.description ?? '';
 
+    final isSelected = _selectedProjectIds.contains(project.id);
+
     return Card(
-      color: AppColors.purple,
+      color: isSelected
+          ? AppColors.purple.withValues(alpha: 0.1)
+          : AppColors.primaryBackground,
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProjectDetailsScreen(project: project),
-            ),
-          );
+          if (_isSelectionMode) {
+            _toggleSelection(project.id);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProjectDetailsScreen(projectId: project.id),
+              ),
+            );
+          }
         },
+        onLongPress: () => _toggleSelection(project.id),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
@@ -245,16 +281,31 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 16, color: timeColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        timeText,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: timeColor,
+                      if (_isSelectionMode)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Icon(
+                            isSelected
+                                ? Icons.check_circle
+                                : Icons.circle_outlined,
+                            color: AppColors.purple,
+                          ),
+                        )
+                      else
+                        Row(
+                          children: [
+                            Icon(Icons.access_time, size: 16, color: timeColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              timeText,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: timeColor,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -388,9 +439,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     .createProject(nameController.text.trim());
                 Navigator.pop(ctx);
                 Navigator.push(
-                  context, // Використовуємо контекст батьківського віджета (ProjectsScreen)
+                  context,
                   MaterialPageRoute(
-                    builder: (_) => ProjectDetailsScreen(project: newProject),
+                    builder: (_) =>
+                        ProjectDetailsScreen(projectId: newProject.id),
                   ),
                 );
               }
@@ -403,5 +455,58 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+  }
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedProjectIds.contains(id)) {
+        _selectedProjectIds.remove(id);
+      } else {
+        _selectedProjectIds.add(id);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedProjectIds.clear();
+    });
+  }
+
+  void _showDeleteSelectedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.dialogBackground,
+        title: const Text(
+          'Delete Projects',
+          style: TextStyle(color: AppColors.purple),
+        ),
+        content: Text(
+          'Delete ${_selectedProjectIds.length} projects? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final provider = context.read<ProjectProvider>();
+              final idsToDelete = _selectedProjectIds.toList();
+
+              Navigator.pop(ctx);
+
+              for (final id in idsToDelete) {
+                await provider.deleteProject(id);
+              }
+
+              _clearSelection();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

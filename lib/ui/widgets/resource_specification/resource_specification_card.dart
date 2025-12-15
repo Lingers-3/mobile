@@ -1,63 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
-import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
+import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
-import 'package:pocketeer_mobile/providers/item_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 
-class ResourceSpecificationCard extends StatelessWidget {
-  final ResourceSpecification specification;
+class ResourceSpecificationCard extends StatefulWidget {
+  final int projectId;
+  final int specificationId;
   final VoidCallback? onTap;
-  final ItemType itemType;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const ResourceSpecificationCard({
     super.key,
-    required this.specification,
-    required this.itemType,
+    required this.projectId,
+    required this.specificationId,
     this.onTap,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
+  State<ResourceSpecificationCard> createState() =>
+      _ResourceSpecificationCard();
+}
+
+class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
+  @override
   Widget build(BuildContext context) {
-    final resourceSpecification = context
-        .watch<ResourceSpecificationProvider>()
-        .specifications
-        .firstWhere(
-          (rs) => rs.id == specification.id,
-          orElse: () => specification,
+    // --- GET SPECIFICATION ---
+    final specification = context
+        .select<ProjectProvider, ResourceSpecification?>(
+          (p) => p
+              .getById(widget.projectId)
+              ?.specifications
+              ?.where((s) => s.id == widget.specificationId)
+              .firstOrNull,
         );
+
+    if (specification == null) {
+      // TODO(saloway): handle gracefuly
+      return const Center(child: Text('Specification not found!'));
+    }
+
+    final reservations = specification.reservations ?? [];
+
+    final itemType = context.select<ItemTypeProvider, ItemType>(
+      (itp) =>
+          itp.itemTypes.firstWhere((it) => it.id == specification.itemTypeId),
+    );
+
     final String unit = itemType.displayMeasurementUnit;
     final String name = itemType.name;
 
-    // 2. ПІДРАХУНОК ФАКТИЧНИХ ДАНИХ
-    // Нам потрібно знайти всі резервації, які стосуються цього типу предметів
-    // і підсумувати їх.
-
-    // Крок А: Знаходимо ID всіх предметів цього типу
-    final allItems = context
-        .read<ItemProvider>()
-        .items; // read тут ок, бо ми слухаємо зміни нижче або вище по дереву
-    final itemIdsOfType = allItems
-        .where((i) => i.itemTypeId == specification.itemTypeId)
-        .map((i) => i.id)
-        .toSet();
-
-    // Крок Б: Слухаємо провайдер резервацій і фільтруємо
-    final reservationProvider = context.watch<ResourceReservationProvider>();
-    final relevantReservations = reservationProvider.reservations.where(
-      (r) =>
-          itemIdsOfType.contains(r.itemId) &&
-          r.resourceSpecificationId == resourceSpecification.id,
-    );
-
-    // Крок В: Сумуємо
-    final double actualReserved = relevantReservations.fold(
+    final double actualReserved = reservations.fold(
       0,
       (sum, r) => sum + r.reservedQuantity,
     );
-    final double actualUsed = relevantReservations.fold(
+    final double actualUsed = reservations.fold(
       0,
       (sum, r) => sum + r.usedQuantity,
     );
@@ -72,17 +75,17 @@ class ResourceSpecificationCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
-              // --- Верхній рядок: Картинка + Назва + Тип ---
+              // --- UPPER ROW: picture + name + resource type ---
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Placeholder для картинки (або реальне фото, якщо є URL)
+                  // IMAGE
                   Container(
                     width: 50,
                     height: 50,
@@ -138,6 +141,45 @@ class ResourceSpecificationCard extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  Transform.translate(
+                    offset: const Offset(8, 0),
+                    child: PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      color: AppColors.dialogBackground,
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: AppColors.purple,
+                      ),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            widget.onEdit?.call();
+                            break;
+                          case 'delete':
+                            widget.onDelete?.call();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        if (widget.onEdit != null)
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Text(
+                              "Edit",
+                              style: TextStyle(color: AppColors.pink),
+                            ),
+                          ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            "Delete",
+                            style: TextStyle(color: AppColors.cyan),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
 
@@ -151,21 +193,21 @@ class ResourceSpecificationCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildStatItem(
-                    'План',
+                    'Planned',
                     specification.plannedQuantity,
                     unit,
                     Colors.black87,
                   ),
                   _buildVerticalDivider(),
                   _buildStatItem(
-                    'Резерв',
+                    'Reserved',
                     actualReserved,
                     unit,
                     Colors.blue.shade700,
                   ),
                   _buildVerticalDivider(),
                   _buildStatItem(
-                    'Витрачено',
+                    'Used',
                     actualUsed,
                     unit,
                     actualUsed > specification.plannedQuantity

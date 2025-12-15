@@ -2,27 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
-import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
+import 'package:pocketeer_mobile/providers/item_type_provider.dart';
+import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/project_inventory_tile.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/resource_reservation_card.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/item_details_dialog.dart';
 
 class ResourceSpecificationScreen extends StatefulWidget {
-  final ResourceSpecification specification;
-  final ProjectState projectStatus;
-  final ItemType itemType;
+  final int projectId;
+  final int specificationId;
 
   const ResourceSpecificationScreen({
     super.key,
-    required this.specification,
-    required this.projectStatus,
-    required this.itemType,
+    required this.projectId,
+    required this.specificationId,
   });
 
   @override
@@ -36,49 +34,47 @@ class _ResourceSpecificationScreenState
   void initState() {
     super.initState();
     // Update data
+    context.read<ProjectProvider>().fetchProject(widget.projectId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ResourceReservationProvider>().loadReservations();
       context.read<ItemProvider>().loadAllItems();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final resourceSpecification = context
-        .watch<ResourceSpecificationProvider>()
-        .specifications
-        .firstWhere(
-          (rs) => rs.id == widget.specification.id,
-          orElse: () => widget.specification,
-        );
-
-    final typeName = widget.itemType.name;
-    final unit = widget.itemType.displayMeasurementUnit;
-
-    // 2. Отримуємо дані з провайдерів
-    final reservationProvider = context.watch<ResourceReservationProvider>();
-    final itemProvider = context.watch<ItemProvider>();
-
-    // 3. ФІЛЬТРАЦІЯ: Нам потрібні тільки дані, що стосуються itemTypeId цієї специфікації
-
-    final itemsOfThisType = itemProvider.getItemsByType(
-      resourceSpecification.itemTypeId,
+    final project = context.select<ProjectProvider, Project?>(
+      (pp) => pp.getById(widget.projectId),
     );
-    final itemsIdsOfThisType = itemsOfThisType.map((i) => i.id).toSet();
 
-    // Всі резервації, які посилаються на предмети цього типу
-    final relevantReservations = reservationProvider.reservations
-        .where(
-          (r) =>
-              itemsIdsOfThisType.contains(r.itemId) &&
-              r.resourceSpecificationId == resourceSpecification.id,
-        )
-        .toList();
+    if (project == null) {
+      // TODO(saloway): handle gracefuly
+      return const Center(child: Text("The project is null"));
+    }
 
-    // ID предметів, які вже зарезервовані (в межах специфікації цього проекту)
-    // Увага: тут спрощення. В реальності треба перевіряти, чи зарезервований предмет саме під цю специфікацію.
-    // Поки що вважаємо, що всі резервації цього типу належать сюди (для демо).
-    final reservedItemIds = relevantReservations.map((r) => r.itemId).toSet();
+    final specification = project.specifications?.firstWhere(
+      (s) => s.id == widget.specificationId,
+    );
+
+    if (specification == null) {
+      // TODO(saloway): handle gracefuly
+      return const Center(child: Text("The specification is null"));
+    }
+
+    final reservations = specification.reservations ?? [];
+
+    final specificationItemType = context.select<ItemTypeProvider, ItemType>(
+      (itp) =>
+          itp.itemTypes.firstWhere((it) => it.id == specification.itemTypeId),
+    );
+
+    final typeName = specificationItemType.name;
+    final unit = specificationItemType.displayMeasurementUnit;
+
+    final itemsOfThisType = context.read<ItemProvider>().getItemsByType(
+      specification.itemTypeId,
+    );
+
+    final reservedItemIds = reservations.map((r) => r.itemId).toSet();
 
     // Доступний інвентар: предмети цього типу, яких немає в резерваціях
     final availableInventory = itemsOfThisType
@@ -86,18 +82,14 @@ class _ResourceSpecificationScreenState
         .toList();
 
     // 4. ПІДРАХУНОК СТАТИСТИКИ
-    // NOTE(saloway): очікується від бекенду через провайдер специфікацій
-    final totalReserved = relevantReservations.fold(
+    final totalReserved = reservations.fold(
       0.0,
       (sum, r) => sum + r.reservedQuantity,
     );
-    final totalUsed = relevantReservations.fold(
-      0.0,
-      (sum, r) => sum + r.usedQuantity,
-    );
+    final totalUsed = reservations.fold(0.0, (sum, r) => sum + r.usedQuantity);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Специфікація ресурсу')),
+      appBar: AppBar(title: const Text('Resource specification')),
       body: Column(
         children: [
           // --- HEADER: Інформація про специфікацію ---
@@ -122,7 +114,7 @@ class _ResourceSpecificationScreenState
                     ),
                     // SPECIFICATION RESOURCE TYPE
                     Chip(
-                      label: Text(resourceSpecification.resourceTypeLabel),
+                      label: Text(specification.resourceTypeLabel),
                       backgroundColor: Colors.blue.shade50,
                       labelStyle: const TextStyle(color: Colors.blue),
                     ),
@@ -134,27 +126,27 @@ class _ResourceSpecificationScreenState
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _statColumn(
-                      'Заплановано',
-                      resourceSpecification.plannedQuantity,
+                      'Planned',
+                      specification.plannedQuantity,
                       unit,
                       Colors.black,
                       true,
                     ),
                     _statColumn(
-                      'Зарезервовано',
+                      'Reserved',
                       totalReserved,
                       unit,
                       Colors.blue,
-                      widget.projectStatus != ProjectState.planned,
+                      project.state != ProjectState.planned,
                     ),
                     _statColumn(
-                      'Витрачено',
+                      'Used',
                       totalUsed,
                       unit,
-                      totalUsed > resourceSpecification.plannedQuantity
+                      totalUsed > specification.plannedQuantity
                           ? Colors.red
                           : Colors.green,
-                      widget.projectStatus != ProjectState.planned,
+                      project.state != ProjectState.planned,
                     ),
                   ],
                 ),
@@ -163,10 +155,11 @@ class _ResourceSpecificationScreenState
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: resourceSpecification.plannedQuantity > 0
-                        ? (totalReserved /
-                                  resourceSpecification.plannedQuantity)
-                              .clamp(0.0, 1.0)
+                    value: specification.plannedQuantity > 0
+                        ? (totalReserved / specification.plannedQuantity).clamp(
+                            0.0,
+                            1.0,
+                          )
                         : 0,
                     backgroundColor: Colors.grey.shade200,
                     color: Colors.blue,
@@ -184,20 +177,17 @@ class _ResourceSpecificationScreenState
               child: Column(
                 children: [
                   // Секція Резервацій
-                  _sectionHeader(
-                    'Зарезервовані ресурси',
-                    relevantReservations.length,
-                  ),
-                  if (relevantReservations.isEmpty)
+                  _sectionHeader('Reserved resources', reservations.length),
+                  if (reservations.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(
-                        'Поки що нічого не зарезервовано',
+                        'There is nothing to add',
                         style: TextStyle(color: Colors.grey),
                       ),
                     )
                   else
-                    ...relevantReservations.map(
+                    ...reservations.map(
                       (r) => ResourceReservationCard(reservation: r),
                     ),
 
@@ -205,14 +195,14 @@ class _ResourceSpecificationScreenState
 
                   // Секція Інвентарю
                   _sectionHeader(
-                    'Доступно в інвентарі',
+                    'Available in the inventory',
                     availableInventory.length,
                   ),
                   if (availableInventory.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(
-                        'Немає вільних предметів цього типу',
+                        'No free items of this type',
                         style: TextStyle(color: Colors.grey),
                       ),
                     )
@@ -222,7 +212,8 @@ class _ResourceSpecificationScreenState
                         item: item,
                         onAdd: () => _showAddReservationDialog(
                           context,
-                          resourceSpecification,
+                          specification,
+                          specificationItemType,
                           item,
                         ),
                         onTap: () => _showItemDetails(context, item),
@@ -304,21 +295,31 @@ class _ResourceSpecificationScreenState
 
   void _showAddReservationDialog(
     BuildContext context,
-    ResourceSpecification resourceSpecification,
+    ResourceSpecification specification,
+    ItemType itemType,
     Item item,
   ) {
-    final quantityController = TextEditingController();
+    final reservedQuantityController = TextEditingController();
+    final usedQuantityController = TextEditingController();
+    final itemTypeName = itemType.name;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Зарезервувати'),
+        title: Text('Reserve $itemTypeName'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Скільки взяти з "${widget.itemType.name}"?'),
+            // TODO(saloway): fix labels
+            Text('Reserve'),
             CustomTextField(
-              controller: quantityController,
-              labelText: 'Кількість',
+              controller: reservedQuantityController,
+              labelText: 'Quantity (${itemType.baseMeasurementUnit})',
+              keyboardType: TextInputType.number,
+            ),
+            Text('Use'),
+            CustomTextField(
+              controller: usedQuantityController,
+              labelText: 'Quantity (${itemType.baseMeasurementUnit})',
               keyboardType: TextInputType.number,
             ),
           ],
@@ -326,27 +327,43 @@ class _ResourceSpecificationScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Скасувати'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
-              final qty = double.tryParse(quantityController.text);
+              final reservedQuantity = double.tryParse(
+                reservedQuantityController.text,
+              );
+              final usedQuantity = double.tryParse(usedQuantityController.text);
 
-              if (qty == null || qty <= 0) {
+              if (reservedQuantity == null ||
+                  reservedQuantity <= 0 ||
+                  (usedQuantity != null && usedQuantity <= 0)) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Введіть число більше нуля')),
+                  const SnackBar(content: Text('Enter value greater than 0')),
                 );
                 return;
               }
-
-              context.read<ResourceReservationProvider>().addReservation(
-                resourceSpecification.id,
+              if (usedQuantity != null && usedQuantity > reservedQuantity) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Used quantity shall not be greater than reserved',
+                    ),
+                  ),
+                );
+                return;
+              }
+              context.read<ProjectProvider>().reserveItem(
+                widget.projectId,
+                specification.id,
                 item.id,
-                qty,
+                reservedQuantity,
+                usedQuantity ?? 0,
               );
               Navigator.pop(ctx);
             },
-            child: const Text('Додати'),
+            child: const Text('Add'),
           ),
         ],
       ),

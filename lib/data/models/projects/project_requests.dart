@@ -23,16 +23,19 @@ class ProjectPlanResourceRequest {
 class ProjectAddResourceSpecificationRequest {
   final int itemTypeId;
   final ResourceType resourceType;
+  final double plannedQuantity;
 
   ProjectAddResourceSpecificationRequest({
     required this.itemTypeId,
     required this.resourceType,
+    required this.plannedQuantity,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'item_type_id': itemTypeId,
       'resource_type': resourceType,
+      'planned_quantity': plannedQuantity,
     };
   }
 }
@@ -50,9 +53,9 @@ class ProjectAddResourceReservationRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'item_type_id': itemId,
-      'reserved_quantity': reservedQuantity,
-      'used_quantity': usedQuantity,
+      'item_id': itemId,
+      'reserved': reservedQuantity,
+      'used': usedQuantity,
     };
   }
 }
@@ -62,25 +65,22 @@ class ProjectCreateRequest {
   final String? description;
   final DateTime? plannedDeadline;
   final double? plannedIncome;
-  final String currency;
-  final double? plannedWorkTime;
+  final int? plannedWorkTime;
 
   ProjectCreateRequest({
     required this.name,
     this.description,
     this.plannedDeadline,
-    this.plannedIncome = 0.0,
-    this.currency = 'UAH',
-    this.plannedWorkTime = 0.0,
+    this.plannedIncome,
+    this.plannedWorkTime,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'description': description,
-      'planned_deadline': plannedDeadline,
+      'planned_deadline': plannedDeadline?.toUtc().toIso8601String(),
       'planned_income': plannedIncome,
-      'currency': currency,
       'planned_work_time': plannedWorkTime,
     };
   }
@@ -89,21 +89,18 @@ class ProjectCreateRequest {
 class ProjectUpdateActualRequest {
   final DateTime? actualDeadline;
   final double? actualIncome;
-  final String currency;
-  final double? actualWorkTime;
+  final int? actualWorkTime;
 
   ProjectUpdateActualRequest({
     this.actualDeadline,
     this.actualIncome = 0.0,
-    this.currency = 'UAH',
-    this.actualWorkTime = 0.0,
+    this.actualWorkTime = 0,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'actual_deadline': actualDeadline,
+      'actual_deadline': actualDeadline?.toUtc().toIso8601String(),
       'actual_income': actualIncome,
-      'currency': currency,
       'actual_work_time': actualWorkTime,
     };
   }
@@ -112,21 +109,18 @@ class ProjectUpdateActualRequest {
 class ProjectUpdatePlanRequest {
   final DateTime? plannedDeadline;
   final double? plannedIncome;
-  final String currency;
-  final double? plannedWorkTime;
+  final int? plannedWorkTime;
 
   ProjectUpdatePlanRequest({
     required this.plannedDeadline,
     required this.plannedIncome,
-    this.currency = 'UAH',
     required this.plannedWorkTime,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'planned_deadline': plannedDeadline,
+      'planned_deadline': plannedDeadline?.toUtc().toIso8601String(),
       'planned_income': plannedIncome,
-      'currency': currency,
       'planned_work_time': plannedWorkTime,
     };
   }

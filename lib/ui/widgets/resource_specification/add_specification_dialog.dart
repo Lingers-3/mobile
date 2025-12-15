@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:pocketeer_mobile/data/models/projects/project_state.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
+import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/widgets/gradient_button.dart';
-import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
-import 'package:pocketeer_mobile/providers/resource_specification_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
+import 'package:provider/provider.dart';
 
 class AddSpecificationDialog extends StatefulWidget {
   final ItemType itemType;
@@ -23,7 +24,7 @@ class AddSpecificationDialog extends StatefulWidget {
 
 class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
   final _quantityController = TextEditingController();
-  ResourceType _selectedType = ResourceType.consumable;
+  ResourceType _selectedResourceType = ResourceType.consumable;
   String? _errorText;
 
   @override
@@ -52,7 +53,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
         children: [
           // Вибір типу ресурсу
           DropdownButtonFormField<ResourceType>(
-            initialValue: _selectedType,
+            initialValue: _selectedResourceType,
             decoration: const InputDecoration(
               labelText: 'Type of using',
               border: OutlineInputBorder(),
@@ -80,7 +81,7 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
               ),
             ],
             onChanged: (val) {
-              if (val != null) setState(() => _selectedType = val);
+              if (val != null) setState(() => _selectedResourceType = val);
             },
           ),
           const SizedBox(height: 16),
@@ -117,23 +118,35 @@ class _AddSpecificationDialogState extends State<AddSpecificationDialog> {
   }
 
   void _submit() {
-    final qty = double.tryParse(_quantityController.text);
-    if (qty == null || qty < 0) {
-      setState(() => _errorText = 'Введіть коректну кількість (>= 0)');
+    final plannedQuantity = double.tryParse(_quantityController.text);
+    if (plannedQuantity == null || plannedQuantity < 0) {
+      setState(() => _errorText = 'Planned quantity must be greater than 0');
       return;
     }
+    final project = context.read<ProjectProvider>().getById(widget.projectId);
+    if (project != null) {
+      switch (project.state) {
+        case ProjectState.planned:
+          context.read<ProjectProvider>().planResource(
+            project.id,
+            widget.itemType.id,
+            _selectedResourceType,
+            plannedQuantity,
+          );
+          break;
+        case ProjectState.inProgress:
+          context.read<ProjectProvider>().addResourceSpecification(
+            project.id,
+            widget.itemType.id,
+            _selectedResourceType,
+            plannedQuantity,
+          );
+          break;
+        default:
+          throw UnimplementedError();
+      }
+    }
 
-    final provider = context.read<ResourceSpecificationProvider>();
-
-    // Створюємо нову специфікацію
-    provider.addSpecification(
-      widget.projectId,
-      widget.itemType.id,
-      _selectedType,
-      qty,
-    );
-
-    // Закриваємо діалог і повертаємо true (успіх)
     Navigator.pop(context, true);
   }
 }

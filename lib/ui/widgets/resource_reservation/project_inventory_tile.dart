@@ -64,13 +64,13 @@ class ProjectInventoryTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          'Доступно: ${item.quantity} ${item.displayMeasurementUnit}',
+          'Available: ${item.quantity} ${item.displayMeasurementUnit}',
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
           onPressed: onAdd,
-          tooltip: 'Зарезервувати',
+          tooltip: 'Reserve',
         ),
       ),
     );

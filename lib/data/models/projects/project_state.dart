@@ -7,38 +7,38 @@ enum ProjectState {
   String get label {
     switch (this) {
       case ProjectState.planned:
-        return 'Заплановано';
+        return 'Planning';
       case ProjectState.inProgress:
-        return 'В процесі';
+        return 'In progress';
       case ProjectState.completed:
-        return 'Завершено';
+        return 'Completed';
       case ProjectState.cancelled:
-        return 'Відмінено';
+        return 'Canceled';
     }
   }
 
   String toJson() {
     switch (this) {
       case ProjectState.planned:
-        return 'planned';
+        return 'Planning';
       case ProjectState.inProgress:
-        return 'in_progress';
+        return 'Active';
       case ProjectState.completed:
-        return 'completed';
+        return 'Completed';
       case ProjectState.cancelled:
-        return 'cancelled';
+        return 'Canceled';
     }
   }
 
   static ProjectState fromJson(String json) {
     switch (json) {
-      case 'planned':
+      case 'Planning':
         return ProjectState.planned;
-      case 'in_progress':
+      case 'Active':
         return ProjectState.inProgress;
-      case 'completed':
+      case 'Completed':
         return ProjectState.completed;
-      case 'cancelled':
+      case 'Canceled':
         return ProjectState.cancelled;
       default:
         return ProjectState.planned;

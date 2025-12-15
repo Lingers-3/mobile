@@ -22,7 +22,7 @@ class ItemCreateRequest {
       'item_type_id': itemTypeId,
       'description': description,
       'quantity': quantity,
-      'expiration_date': expirationDate?.toUtc().toIso8601String(),
+      'expiration_date': expirationDate?.toUtc().toUtc().toIso8601String(),
       'display_measurement_unit': displayMeasurementUnit,
       'purchase_price': purchasePrice,
       'tag_ids': tagIds,

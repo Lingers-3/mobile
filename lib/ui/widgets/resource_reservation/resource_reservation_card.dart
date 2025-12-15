@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/resource_reservations/resource_reservation.dart';
 import 'package:pocketeer_mobile/providers/item_provider.dart';
-import 'package:pocketeer_mobile/providers/resource_reservation_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/resource_reservation_edit_dialog.dart';
 
 class ResourceReservationCard extends StatelessWidget {
@@ -140,25 +139,27 @@ class ResourceReservationCard extends StatelessWidget {
   }
 
   void _showEditDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => ResourceReservationEditDialog(
-        reservation: reservation,
-        onApply: (newReserved, newUsed) {
-          context.read<ResourceReservationProvider>().updateReservation(
-            reservation.id,
-            reservedQuantity: newReserved,
-            usedQuantity: newUsed,
-          );
-        },
-      ),
-    );
+    throw UnimplementedError();
+    // showDialog(
+    //   context: context,
+    //   builder: (ctx) => ResourceReservationEditDialog(
+    //     reservation: reservation,
+    //     onApply: (newReserved, newUsed) {
+    //       context.read<ResourceReservationProvider>().updateReservation(
+    //         reservation.id,
+    //         reservedQuantity: newReserved,
+    //         usedQuantity: newUsed,
+    //       );
+    //     },
+    //   ),
+    // );
   }
 
   void _deleteReservation(BuildContext context) {
+    throw UnimplementedError();
     // TODO: add delete confirmation dialog
-    context.read<ResourceReservationProvider>().deleteReservation(
-      reservation.id,
-    );
+    // context.read<ResourceReservationProvider>().deleteReservation(
+    //   reservation.id,
+    // );
   }
 }
