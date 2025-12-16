@@ -47,21 +47,21 @@ class _ResourceReservationEditDialogState
 
     if (reserved == null || used == null) {
       setState(() {
-        _errorMessage = 'Будь ласка, введіть коректні числа';
+        _errorMessage = 'Enter valid values';
       });
       return;
     }
 
     if (reserved < 0 || used < 0) {
       setState(() {
-        _errorMessage = 'Кількість не може бути від\'ємною';
+        _errorMessage = 'Quantity cannot be negative';
       });
       return;
     }
 
     if (used > reserved) {
       setState(() {
-        _errorMessage = 'Використана кількість не може перевищувати зарезервовану!';
+        _errorMessage = 'Used quantity overflows reserved';
       });
       return;
     }
@@ -73,19 +73,19 @@ class _ResourceReservationEditDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Редагування резервації'),
+      title: const Text('Edit Reservation'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           CustomTextField(
             controller: _reservedController,
-            labelText: 'Кількість резервації',
+            labelText: 'Reserved',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 16),
           CustomTextField(
             controller: _usedController,
-            labelText: 'Кількість використаного',
+            labelText: 'Used',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           if (_errorMessage != null)
@@ -101,12 +101,9 @@ class _ResourceReservationEditDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Скасувати'),
+          child: const Text('Cancel'),
         ),
-        TextButton(
-           onPressed: _validateAndSubmit,
-           child: const Text('Застосувати'),
-        ),
+        TextButton(onPressed: _validateAndSubmit, child: const Text('Apply')),
       ],
     );
   }

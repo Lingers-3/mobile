@@ -136,3 +136,17 @@ class ProjectUpdateRequest {
     return {'name': name, 'description': description};
   }
 }
+
+class ProjectUpdateResourceReservation {
+  final double reservedQuantity;
+  final double usedQuantity;
+
+  ProjectUpdateResourceReservation({
+    required this.reservedQuantity,
+    required this.usedQuantity,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {'reserved': reservedQuantity, 'used': usedQuantity};
+  }
+}

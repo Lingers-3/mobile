@@ -12,6 +12,7 @@ import 'package:pocketeer_mobile/ui/widgets/custom_text_field.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/project_inventory_tile.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/resource_reservation_card.dart';
 import 'package:pocketeer_mobile/ui/widgets/resource_reservation/item_details_dialog.dart';
+import 'package:pocketeer_mobile/theme/app_theme.dart';
 
 class ResourceSpecificationScreen extends StatefulWidget {
   final int projectId;
@@ -34,7 +35,6 @@ class _ResourceSpecificationScreenState
   void initState() {
     super.initState();
     // Update data
-    context.read<ProjectProvider>().fetchProject(widget.projectId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ItemProvider>().loadAllItems();
     });
@@ -62,17 +62,25 @@ class _ResourceSpecificationScreenState
 
     final reservations = specification.reservations ?? [];
 
-    final specificationItemType = context.select<ItemTypeProvider, ItemType>(
-      (itp) =>
-          itp.itemTypes.firstWhere((it) => it.id == specification.itemTypeId),
+    final itemType = context.select<ItemTypeProvider, ItemType?>(
+      (itp) => itp.itemTypes
+          .where((it) => it.id == specification.itemTypeId)
+          .firstOrNull,
     );
 
-    final typeName = specificationItemType.name;
-    final unit = specificationItemType.displayMeasurementUnit;
+    if (itemType == null) {
+      // TODO(saloway): handle gracefuly
+      return const Center(child: Text("The item type is null"));
+    }
 
-    final itemsOfThisType = context.read<ItemProvider>().getItemsByType(
-      specification.itemTypeId,
+    final typeName = itemType.name;
+    final unit = itemType.displayMeasurementUnit;
+
+    final itemsOfThisType = context.select<ItemProvider, List<Item>>(
+      (ip) => ip.getItemsByType(specification.itemTypeId),
     );
+
+    final itemsById = {for (var i in itemsOfThisType) i.id: i};
 
     final reservedItemIds = reservations.map((r) => r.itemId).toSet();
 
@@ -89,37 +97,38 @@ class _ResourceSpecificationScreenState
     final totalUsed = reservations.fold(0.0, (sum, r) => sum + r.usedQuantity);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Resource specification')),
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // TYPE NAME
+            Expanded(
+              child: Text(
+                typeName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.purple,
+                ),
+              ),
+            ),
+            // SPECIFICATION RESOURCE TYPE
+            Chip(
+              label: Text(specification.resourceTypeLabel),
+              backgroundColor: AppColors.dialogBackground,
+              labelStyle: const TextStyle(color: AppColors.pink),
+            ),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           // --- HEADER: Інформація про специфікацію ---
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // TYPE NAME
-                    Expanded(
-                      child: Text(
-                        typeName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    // SPECIFICATION RESOURCE TYPE
-                    Chip(
-                      label: Text(specification.resourceTypeLabel),
-                      backgroundColor: Colors.blue.shade50,
-                      labelStyle: const TextStyle(color: Colors.blue),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 16),
                 // SPECIFICATION STATS
                 Row(
@@ -129,7 +138,7 @@ class _ResourceSpecificationScreenState
                       'Planned',
                       specification.plannedQuantity,
                       unit,
-                      Colors.black,
+                      Colors.grey,
                       true,
                     ),
                     _statColumn(
@@ -173,56 +182,92 @@ class _ResourceSpecificationScreenState
 
           // --- LISTS ---
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Секція Резервацій
-                  _sectionHeader('Reserved resources', reservations.length),
-                  if (reservations.isEmpty)
-                    const Padding(
+            child: CustomScrollView(
+              slivers: [
+                // --- RESERVED RESOURCES HEADER ---
+                SliverToBoxAdapter(
+                  child: _sectionHeader(
+                    'Reserved resources',
+                    reservations.length,
+                  ),
+                ),
+
+                // --- RESERVED RESOURCES LIST ---
+                if (reservations.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(
                         'There is nothing to add',
                         style: TextStyle(color: Colors.grey),
                       ),
-                    )
-                  else
-                    ...reservations.map(
-                      (r) => ResourceReservationCard(reservation: r),
                     ),
+                  )
+                else
+                  SliverList.builder(
+                    itemCount: reservations.length,
+                    itemBuilder: (context, index) {
+                      final r = reservations[index];
+                      final item = itemsById[r.itemId];
+                      if (item == null) {
+                        throw Exception('Item is null');
+                      }
+                      return ResourceReservationCard(
+                        key: ValueKey(r.id),
+                        projectId: project.id,
+                        specificationId: specification.id,
+                        itemType: itemType,
+                        item: item,
+                        reservation: r,
+                      );
+                    },
+                  ),
 
-                  const SizedBox(height: 16),
+                // --- SPACER ---
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-                  // Секція Інвентарю
-                  _sectionHeader(
+                // --- INVENTORY HEADER ---
+                SliverToBoxAdapter(
+                  child: _sectionHeader(
                     'Available in the inventory',
                     availableInventory.length,
                   ),
-                  if (availableInventory.isEmpty)
-                    const Padding(
+                ),
+
+                // --- INVENTORY LIST ---
+                if (availableInventory.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(
                         'No free items of this type',
                         style: TextStyle(color: Colors.grey),
                       ),
-                    )
-                  else
-                    ...availableInventory.map(
-                      (item) => ProjectInventoryTile(
+                    ),
+                  )
+                else
+                  SliverList.builder(
+                    itemCount: availableInventory.length,
+                    itemBuilder: (context, index) {
+                      final item = availableInventory[index];
+                      return ProjectInventoryTile(
+                        key: ValueKey(item.id),
+                        itemType: itemType,
                         item: item,
                         onAdd: () => _showAddReservationDialog(
                           context,
                           specification,
-                          specificationItemType,
+                          itemType,
                           item,
                         ),
                         onTap: () => _showItemDetails(context, item),
-                      ),
-                    ),
+                      );
+                    },
+                  ),
 
-                  const SizedBox(height: 40),
-                ],
-              ),
+                // --- BOTTOM PADDING ---
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
             ),
           ),
         ],
@@ -239,7 +284,10 @@ class _ResourceSpecificationScreenState
   ) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.purple, fontSize: 12),
+        ),
         const SizedBox(height: 4),
         Text(
           active ? '${value.toStringAsFixed(1)} $unit' : '—',
@@ -257,7 +305,6 @@ class _ResourceSpecificationScreenState
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      color: Colors.grey.shade50,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -265,7 +312,7 @@ class _ResourceSpecificationScreenState
             title.toUpperCase(),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.grey,
+              color: AppColors.purple,
               fontSize: 13,
             ),
           ),
@@ -273,12 +320,16 @@ class _ResourceSpecificationScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: AppColors.dialogBackground,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '$count',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.purple,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -330,7 +381,7 @@ class _ResourceSpecificationScreenState
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final reservedQuantity = double.tryParse(
                 reservedQuantityController.text,
               );
@@ -354,6 +405,9 @@ class _ResourceSpecificationScreenState
                 );
                 return;
               }
+
+              final navigator = Navigator.of(ctx);
+
               context.read<ProjectProvider>().reserveItem(
                 widget.projectId,
                 specification.id,
@@ -361,7 +415,9 @@ class _ResourceSpecificationScreenState
                 reservedQuantity,
                 usedQuantity ?? 0,
               );
-              Navigator.pop(ctx);
+              if (navigator.mounted) {
+                navigator.pop();
+              }
             },
             child: const Text('Add'),
           ),

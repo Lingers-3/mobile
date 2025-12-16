@@ -1,60 +1,31 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_type.dart';
-import 'package:pocketeer_mobile/providers/item_type_provider.dart';
-import 'package:pocketeer_mobile/providers/project_provider.dart';
+import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 
-class ResourceSpecificationCard extends StatefulWidget {
-  final int projectId;
-  final int specificationId;
+class ResourceSpecificationCard extends StatelessWidget {
+  final ItemType itemType;
+  final ResourceSpecification specification;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   const ResourceSpecificationCard({
     super.key,
-    required this.projectId,
-    required this.specificationId,
+    required this.itemType,
+    required this.specification,
     this.onTap,
     this.onEdit,
     this.onDelete,
   });
 
   @override
-  State<ResourceSpecificationCard> createState() =>
-      _ResourceSpecificationCard();
-}
-
-class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
-  @override
   Widget build(BuildContext context) {
-    // --- GET SPECIFICATION ---
-    final specification = context
-        .select<ProjectProvider, ResourceSpecification?>(
-          (p) => p
-              .getById(widget.projectId)
-              ?.specifications
-              ?.where((s) => s.id == widget.specificationId)
-              .firstOrNull,
-        );
-
-    if (specification == null) {
-      // TODO(saloway): handle gracefuly
-      return const Center(child: Text('Specification not found!'));
-    }
-
     final reservations = specification.reservations ?? [];
-
-    final itemType = context.select<ItemTypeProvider, ItemType>(
-      (itp) =>
-          itp.itemTypes.firstWhere((it) => it.id == specification.itemTypeId),
-    );
-
-    final String unit = itemType.displayMeasurementUnit;
-    final String name = itemType.name;
 
     final double actualReserved = reservations.fold(
       0,
@@ -68,14 +39,13 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
     // Візуальні налаштування
     final isTool = specification.resourceType == ResourceType.tool;
     final typeColor = isTool ? Colors.orange : Colors.blue;
-    final typeIcon = isTool ? Icons.handyman : Icons.layers;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -86,20 +56,8 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // IMAGE
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                      image: itemType.pictureId != null
-                          ? null // Тут можна додати NetworkImage, якщо реалізувати завантаження фото
-                          : null,
-                    ),
-                    child: itemType.pictureId == null
-                        ? Icon(typeIcon, color: typeColor, size: 28)
-                        : null,
-                  ),
+                  _buildImage(context),
+
                   const SizedBox(width: 12),
 
                   // Назва та бейдж типу
@@ -108,7 +66,7 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name,
+                          itemType.name,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -154,15 +112,15 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
                       onSelected: (value) {
                         switch (value) {
                           case 'edit':
-                            widget.onEdit?.call();
+                            onEdit?.call();
                             break;
                           case 'delete':
-                            widget.onDelete?.call();
+                            onDelete?.call();
                             break;
                         }
                       },
                       itemBuilder: (context) => [
-                        if (widget.onEdit != null)
+                        if (onEdit != null)
                           const PopupMenuItem(
                             value: 'edit',
                             child: Text(
@@ -195,21 +153,18 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
                   _buildStatItem(
                     'Planned',
                     specification.plannedQuantity,
-                    unit,
                     Colors.black87,
                   ),
                   _buildVerticalDivider(),
                   _buildStatItem(
                     'Reserved',
                     actualReserved,
-                    unit,
                     Colors.blue.shade700,
                   ),
                   _buildVerticalDivider(),
                   _buildStatItem(
                     'Used',
                     actualUsed,
-                    unit,
                     actualUsed > specification.plannedQuantity
                         ? Colors.red
                         : Colors.green.shade700,
@@ -223,7 +178,7 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
     );
   }
 
-  Widget _buildStatItem(String label, double value, String unit, Color color) {
+  Widget _buildStatItem(String label, double value, Color color) {
     return Expanded(
       child: Column(
         children: [
@@ -251,7 +206,7 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
                   ),
                 ),
                 TextSpan(
-                  text: ' $unit',
+                  text: ' ${itemType.displayMeasurementUnit}',
                   style: TextStyle(
                     color: color.withValues(alpha: 0.7),
                     fontSize: 12,
@@ -267,5 +222,71 @@ class _ResourceSpecificationCard extends State<ResourceSpecificationCard> {
 
   Widget _buildVerticalDivider() {
     return Container(height: 24, width: 1, color: Colors.grey.shade300);
+  }
+
+  Widget _buildImage(BuildContext context) {
+    final placeholder = Icon(
+      specification.resourceType == ResourceType.tool
+          ? Icons.handyman
+          : Icons.layers,
+      color: AppColors.purple,
+      size: 40,
+    );
+
+    final pictureHash = itemType.pictureHash;
+
+    if (pictureHash == null) {
+      return _imageContainer(icon: placeholder); // Немає зображення
+    }
+
+    final provider = context.read<PictureProvider>();
+
+    // 1. ПЕРЕВІРКА КЕШУ: ВИКОРИСТОВУЄМО getCachedPictureBytesByHash
+    final cachedBytes = provider.getCachedPictureBytesByHash(pictureHash);
+    if (cachedBytes != null) {
+      return _imageContainer(image: MemoryImage(cachedBytes)); // З кешу
+    }
+
+    // 2. ЗАВАНТАЖЕННЯ: ВИКОРИСТОВУЄМО getPictureBytesByHash
+    return FutureBuilder<Uint8List>(
+      future: provider.getPictureBytesByHash(pictureHash),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _imageContainer(loading: true); // Завантаження
+        }
+        final bytes = snapshot.data;
+        if (bytes != null) {
+          return _imageContainer(
+            image: MemoryImage(bytes),
+          ); // Успішно завантажено
+        }
+        return _imageContainer(icon: placeholder); // Помилка/Відсутність даних
+      },
+    );
+  }
+
+  Widget _imageContainer({
+    ImageProvider? image,
+    bool loading = false,
+    Widget? icon,
+  }) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(8),
+        image: image != null
+            ? DecorationImage(image: image, fit: BoxFit.cover)
+            : null,
+      ),
+      child: loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.pink),
+            )
+          : image == null
+          ? icon
+          : null,
+    );
   }
 }

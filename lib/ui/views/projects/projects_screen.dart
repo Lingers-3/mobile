@@ -102,7 +102,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               title: const Text(
                 "Projects",
                 style: TextStyle(color: AppColors.purple),
-              ), // Або ваш заголовок
+              ),
             ),
 
       floatingActionButton: CustomFloatingButton(
@@ -200,8 +200,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
     String timeText = '-';
     Color timeColor = AppColors.purple;
-    final plannedHours = project.plannedHours ?? 0;
-    final actualHours = project.actualHours ?? 0;
+    final plannedHours = project.plannedWorkTime ?? 0;
+    final actualHours = project.actualWorkTime ?? 0;
 
     if (plannedHours != 0 && actualHours != 0) {
       final actual = actualHours
@@ -216,7 +216,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
     String incomeText = '-';
     Color incomeColor = AppColors.purple;
-    final actualIncome = project.actualIncome;
+    final actualIncome = project.actualRevenue;
 
     if (project.state == ProjectState.planned) {
       incomeText = project.plannedIncome != null
@@ -232,6 +232,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final isSelected = _selectedProjectIds.contains(project.id);
 
     return Card(
+      key: ValueKey(project.id),
       color: isSelected
           ? AppColors.purple.withValues(alpha: 0.1)
           : AppColors.primaryBackground,

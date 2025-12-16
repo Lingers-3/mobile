@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:pocketeer_mobile/core/constants/app_constants.dart';
 import 'package:pocketeer_mobile/data/models/projects/project.dart';
 import 'package:pocketeer_mobile/data/models/projects/project_requests.dart';
+import 'package:pocketeer_mobile/data/models/resource_reservations/resource_reservation.dart';
+import 'package:pocketeer_mobile/data/models/resource_specifications/resource_specification.dart';
 import 'package:pocketeer_mobile/data/services/auth_service.dart';
 
 class ProjectService {
@@ -84,7 +86,7 @@ class ProjectService {
     return project;
   }
 
-  Future<void> updateProjectPlan(
+  Future<Project> updateProjectPlan(
     int id,
     ProjectUpdatePlanRequest requestBody,
   ) async {
@@ -110,6 +112,9 @@ class ProjectService {
     }
 
     final data = jsonDecode(response.body);
+    final project = Project.fromJson(data);
+
+    return project;
   }
 
   Future<Project> updateProjectActual(
@@ -193,7 +198,7 @@ class ProjectService {
     }
   }
 
-  Future<void> planResource(
+  Future<ResourceSpecification> planResource(
     int id,
     ProjectPlanResourceRequest requestBody,
   ) async {
@@ -219,6 +224,11 @@ class ProjectService {
       }
       throw Exception('Failed to add resource specification to the plan');
     }
+
+    final data = jsonDecode(response.body);
+    final resourceSpecification = ResourceSpecification.fromJson(data);
+
+    return resourceSpecification;
   }
 
   Future<void> unplanResource(
@@ -306,7 +316,7 @@ class ProjectService {
     }
   }
 
-  Future<Project> reserveItem(
+  Future<ResourceReservation> reserveItem(
     int projectId,
     int resourceSpecificationId,
     ProjectAddResourceReservationRequest requestBody,
@@ -326,7 +336,7 @@ class ProjectService {
     );
     final response = await request;
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
       if (kDebugMode) {
         print('❌ Failed to reserve item: ${response.statusCode}');
         print(response.body);
@@ -335,9 +345,9 @@ class ProjectService {
     }
 
     final data = jsonDecode(response.body);
-    final project = Project.fromJson(data);
+    final reservation = ResourceReservation.fromJson(data);
 
-    return project;
+    return reservation;
   }
 
   Future<void> freeItem(
@@ -365,8 +375,45 @@ class ProjectService {
     }
   }
 
+  Future<ResourceReservation> updateResourceReservation(
+    int projectId,
+    int specificationId,
+    int reservationId,
+    ProjectUpdateResourceReservation requestBody,
+  ) async {
+    final token = _authService.ensureToken();
+
+    final uri = Uri.parse(
+      '$projectsUrl/$projectId/resources/$specificationId/reservations/$reservationId',
+    );
+    final request = http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(requestBody.toJson()),
+    );
+    final response = await request;
+
+    if (response.statusCode != 200) {
+      if (kDebugMode) {
+        print(
+          '❌ Failed to update resource reservation: ${response.statusCode}',
+        );
+        print(response.body);
+      }
+      throw Exception('Failed to update resource reservation');
+    }
+
+    final data = jsonDecode(response.body);
+    final reservation = ResourceReservation.fromJson(data);
+
+    return reservation;
+  }
+
   // NOTE(saloway): may cause creation of new resource reservations
-  Future<void> startProject(int id) async {
+  Future<Project> startProject(int id) async {
     final token = _authService.ensureToken();
 
     final uri = Uri.parse('$projectsUrl/$id/start');
@@ -387,11 +434,40 @@ class ProjectService {
       }
       throw Exception('Failed to start project');
     }
+
+    final data = jsonDecode(response.body);
+    final project = Project.fromJson(data);
+
+    return project;
   }
 
   // NOTE(saloway): may cause change of items
   Future<Project> finishProject(int id) async {
-    throw UnimplementedError();
+    final token = _authService.ensureToken();
+
+    final uri = Uri.parse('$projectsUrl/$id/complete');
+    final request = http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'id': id}),
+    );
+    final response = await request;
+
+    if (response.statusCode != 200) {
+      if (kDebugMode) {
+        print('❌ Failed to start project: ${response.statusCode}');
+        print(response.body);
+      }
+      throw Exception('Failed to start project');
+    }
+
+    final data = jsonDecode(response.body);
+    final project = Project.fromJson(data);
+
+    return project;
   }
 
   // NOTE(saloway): may cause change of items

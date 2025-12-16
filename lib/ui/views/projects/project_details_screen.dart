@@ -33,6 +33,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         widget.projectId,
         force: true,
       );
+      context.read<ItemTypeProvider>().loadItemTypes();
     });
   }
 
@@ -48,12 +49,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     }
 
     final projectSpecs = project.specifications ?? [];
-    // NOTE(saloway): may want to use filtered get all
-    final projectItemTypes = context.select<ItemTypeProvider, List<ItemType>>(
+
+    final relevantItemTypes = context.select<ItemTypeProvider, List<ItemType>>(
       (itp) => itp.itemTypes
-          .where((it) => projectSpecs.any((rs) => rs.itemTypeId == it.id))
+          .where((it) => projectSpecs.any((s) => s.itemTypeId == it.id))
           .toList(),
     );
+
+    final itemTypesById = {for (var it in relevantItemTypes) it.id: it};
 
     final dateInfo = _getProjectDateInfo(project);
 
@@ -239,9 +242,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                                 // --- EDIT BUTTON ---
                                 IconButton(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.edit,
-                                    color: AppColors.purple,
+                                    color: project.state == ProjectState.planned
+                                        ? AppColors.purple
+                                        : AppColors.purple.withValues(
+                                            alpha: 0.5,
+                                          ),
                                   ),
                                   onPressed:
                                       project.state != ProjectState.planned
@@ -253,7 +260,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                                 project.plannedDeadline,
                                             initialIncome:
                                                 project.plannedIncome,
-                                            initialHours: project.plannedHours,
+                                            initialHours:
+                                                project.plannedWorkTime,
                                             currency: project.currency,
                                             onSave: (date, income, hours) {
                                               final projectProvider = context
@@ -294,9 +302,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             _buildReadOnlyField(
                               label: 'Completion time',
                               value:
-                                  project.plannedHours != null &&
-                                      project.plannedHours != 0.0
-                                  ? '${project.plannedHours} h'
+                                  project.plannedWorkTime != null &&
+                                      project.plannedWorkTime != 0.0
+                                  ? '${project.plannedWorkTime} h'
                                   : '—',
                             ),
                           ],
@@ -312,93 +320,108 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                       // --- ACTUAL COLUMN ---
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // --- HEADER ---
-                                Text(
-                                  'ACTUAL',
-                                  style: TextStyle(
-                                    color: AppColors.pink,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    letterSpacing: 1.0,
+                        child: Opacity(
+                          opacity: project.state == ProjectState.planned
+                              ? 0.5
+                              : 1.0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // --- HEADER ---
+                                  Text(
+                                    'ACTUAL',
+                                    style: TextStyle(
+                                      color: AppColors.pink,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      letterSpacing: 1.0,
+                                    ),
                                   ),
-                                ),
 
-                                // --- EDIT BUTTON ---
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: AppColors.purple,
+                                  // --- EDIT BUTTON ---
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color:
+                                          project.state != ProjectState.planned
+                                          ? AppColors.purple
+                                          : AppColors.purple.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                    ),
+                                    onPressed:
+                                        project.state != ProjectState.inProgress
+                                        ? null
+                                        : () {
+                                            _showEditDialog(
+                                              title: 'Edit in Fact',
+                                              initialDate:
+                                                  project.actualDeadline,
+                                              initialIncome:
+                                                  project.actualRevenue,
+                                              initialHours:
+                                                  project.actualWorkTime,
+                                              currency: project.currency,
+                                              onSave: (date, income, hours) {
+                                                context
+                                                    .read<ProjectProvider>()
+                                                    .updateProjectActual(
+                                                      project.id,
+                                                      date,
+                                                      income,
+                                                      hours,
+                                                    );
+                                              },
+                                            );
+                                          },
                                   ),
-                                  onPressed:
-                                      project.state != ProjectState.inProgress
-                                      ? null
-                                      : () {
-                                          _showEditDialog(
-                                            title: 'Edit in Fact',
-                                            initialDate: project.actualDeadline,
-                                            initialIncome: project.actualIncome,
-                                            initialHours: project.actualHours,
-                                            currency: project.currency,
-                                            onSave: (date, income, hours) {
-                                              context
-                                                  .read<ProjectProvider>()
-                                                  .updateProjectActual(
-                                                    project.id,
-                                                    date,
-                                                    income,
-                                                    hours,
-                                                  );
-                                            },
-                                          );
-                                        },
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
 
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                            // --- DEADLINE FIELD ---
-                            _buildReadOnlyField(
-                              label: 'Deadline',
-                              value: _formatDate(project.actualDeadline) ?? '—',
-                              isBold: true,
-                            ),
+                              // --- DEADLINE FIELD ---
+                              _buildReadOnlyField(
+                                label: 'Deadline',
+                                value:
+                                    _formatDate(project.actualDeadline) ?? '—',
+                                isBold: true,
+                              ),
 
-                            // --- REVENUE FIELD ---
-                            _buildReadOnlyField(
-                              label: 'Revenue',
-                              value:
-                                  project.actualIncome != null &&
-                                      project.actualIncome != 0
-                                  ? '${project.actualIncome} ${project.currency}'
-                                  : '—',
-                              valueColor: (project.actualIncome ?? 0) > 0
-                                  ? Colors.green
-                                  : null,
-                            ),
+                              // --- REVENUE FIELD ---
+                              _buildReadOnlyField(
+                                label: 'Revenue',
+                                value:
+                                    project.actualRevenue != null &&
+                                        project.actualRevenue != 0
+                                    ? '${project.actualRevenue} ${project.currency}'
+                                    : '—',
+                                valueColor: (project.actualRevenue ?? 0) > 0
+                                    ? Colors.green
+                                    : null,
+                              ),
 
-                            // --- WORKING HOURS FIELD ---
-                            _buildReadOnlyField(
-                              label: 'Completion time',
-                              value:
-                                  project.actualHours != null &&
-                                      project.actualHours != 0.0
-                                  ? '${project.actualHours} h'
-                                  : '—',
-                              valueColor:
-                                  (project.plannedHours != null &&
-                                      (project.actualHours ?? 0) >
-                                          (project.plannedHours ?? 0))
-                                  ? Colors.red
-                                  : null,
-                            ),
-                          ],
+                              // --- WORKING HOURS FIELD ---
+                              _buildReadOnlyField(
+                                label: 'Completion time',
+                                value:
+                                    project.actualWorkTime != null &&
+                                        project.actualWorkTime != 0.0
+                                    ? '${project.actualWorkTime} h'
+                                    : '—',
+                                valueColor:
+                                    (project.plannedWorkTime != null &&
+                                        (project.actualWorkTime ?? 0) >
+                                            (project.plannedWorkTime ?? 0))
+                                    ? Colors.red
+                                    : null,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -439,7 +462,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   .finishProject(project.id)
                             : null,
                         child: const Text(
-                          'End',
+                          'Finish',
                           style: TextStyle(color: AppColors.purple),
                         ),
                       ),
@@ -498,9 +521,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     itemCount: projectSpecs.length,
                     itemBuilder: (context, index) {
                       final specification = projectSpecs[index];
+                      final itemType = itemTypesById[specification.itemTypeId];
+                      if (itemType == null) {
+                        return const Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        );
+                      }
                       return ResourceSpecificationCard(
-                        projectId: widget.projectId,
-                        specificationId: specification.id,
+                        key: ValueKey(specification.id),
+                        itemType: itemType,
+                        specification: specification,
                         onTap: project.state != ProjectState.planned
                             ? () => Navigator.push(
                                 context,

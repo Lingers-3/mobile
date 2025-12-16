@@ -79,17 +79,28 @@ class ProjectProvider extends ChangeNotifier {
     double? plannedIncome,
     int? plannedWorkTime,
   ) async {
+    final request = ProjectUpdatePlanRequest(
+      plannedDeadline: plannedDeadline,
+      plannedIncome: plannedIncome,
+      plannedWorkTime: plannedWorkTime,
+    );
+
     _isLoading = true;
     notifyListeners();
 
     try {
-      final request = ProjectUpdatePlanRequest(
-        plannedDeadline: plannedDeadline,
-        plannedIncome: plannedIncome,
-        plannedWorkTime: plannedWorkTime,
+      final partialUpdatedProject = await _projectService.updateProjectPlan(
+        id,
+        request,
       );
-      await _projectService.updateProjectPlan(id, request);
-      await fetchProject(id, force: true);
+      final oldProject = _projectsById[id];
+      if (oldProject == null) return;
+      final mergedProject = oldProject.copyWith(
+        plannedDeadline: partialUpdatedProject.plannedDeadline,
+        plannedIncome: partialUpdatedProject.plannedIncome,
+        plannedWorkTime: partialUpdatedProject.plannedWorkTime,
+      );
+      _projectsById[id] = mergedProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -113,8 +124,18 @@ class ProjectProvider extends ChangeNotifier {
         actualIncome: actualIncome,
         actualWorkTime: actualWorkTime,
       );
-      await _projectService.updateProjectActual(id, request);
-      await fetchProject(id, force: true);
+      final partialUpdatedProject = await _projectService.updateProjectActual(
+        id,
+        request,
+      );
+      final oldProject = _projectsById[id];
+      if (oldProject == null) return;
+      final mergedProject = oldProject.copyWith(
+        actualDeadline: partialUpdatedProject.actualDeadline,
+        actualRevenue: partialUpdatedProject.actualRevenue,
+        actualWorkTime: partialUpdatedProject.actualWorkTime,
+      );
+      _projectsById[id] = mergedProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -136,8 +157,17 @@ class ProjectProvider extends ChangeNotifier {
         name: name,
         description: description,
       );
-      await _projectService.updateProjectInfo(id, request);
-      await fetchProject(id, force: true);
+      final partialUpdatedProject = await _projectService.updateProjectInfo(
+        id,
+        request,
+      );
+      final oldProject = _projectsById[id];
+      if (oldProject == null) return;
+      final mergedProject = oldProject.copyWith(
+        name: partialUpdatedProject.name,
+        description: partialUpdatedProject.description,
+      );
+      _projectsById[id] = mergedProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -176,8 +206,13 @@ class ProjectProvider extends ChangeNotifier {
         plannedQuantity: plannedQuantity,
         resourceType: resourceType,
       );
-      await _projectService.planResource(projectId, request);
-      await fetchProject(projectId, force: true);
+      final newSpec = await _projectService.planResource(projectId, request);
+      final oldProject = _projectsById[projectId];
+      if (oldProject == null) return;
+      final currentSpecs = oldProject.specifications ?? [];
+      final updatedSpecs = [...currentSpecs, newSpec];
+      final updatedProject = oldProject.copyWith(specifications: updatedSpecs);
+      _projectsById[projectId] = updatedProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -198,9 +233,17 @@ class ProjectProvider extends ChangeNotifier {
         projectId,
         plannedResourceSpecificationId,
       );
-      await fetchProject(projectId, force: true);
+      final oldProject = _projectsById[projectId];
+      if (oldProject == null) return;
+      final currentSpecs = oldProject.specifications ?? [];
+      final updatedSpecs = currentSpecs
+          .where((s) => s.id != plannedResourceSpecificationId)
+          .toList();
+      final updatedProject = oldProject.copyWith(specifications: updatedSpecs);
+      _projectsById[projectId] = updatedProject;
     } catch (e) {
       _error = e.toString();
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -221,8 +264,11 @@ class ProjectProvider extends ChangeNotifier {
         resourceType: resourceType,
         plannedQuantity: plannedQuantity,
       );
-      await _projectService.addResourceSpecification(projectId, request);
-      await fetchProject(projectId, force: true);
+      final newProject = await _projectService.addResourceSpecification(
+        projectId,
+        request,
+      );
+      _projectsById[projectId] = newProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -243,9 +289,17 @@ class ProjectProvider extends ChangeNotifier {
         projectId,
         resourceSpecificationId,
       );
-      await fetchProject(projectId, force: true);
+      final oldProject = _projectsById[projectId];
+      if (oldProject == null) return;
+      final currentSpecs = oldProject.specifications ?? [];
+      final updatedSpecs = currentSpecs
+          .where((s) => s.id != resourceSpecificationId)
+          .toList();
+      final updatedProject = oldProject.copyWith(specifications: updatedSpecs);
+      _projectsById[projectId] = updatedProject;
     } catch (e) {
       _error = e.toString();
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -267,12 +321,22 @@ class ProjectProvider extends ChangeNotifier {
         reservedQuantity: reservedQuantity,
         usedQuantity: usedQuantity,
       );
-      await _projectService.reserveItem(
+      final newReservation = await _projectService.reserveItem(
         projectId,
         resourceSpecificationId,
         request,
       );
-      await fetchProject(projectId, force: true);
+      final oldProject = _projectsById[projectId];
+      if (oldProject == null) return;
+      final updatedSpecs = oldProject.specifications?.map((spec) {
+        if (spec.id == resourceSpecificationId) {
+          final updatedReservations = [...?spec.reservations, newReservation];
+          return spec.copyWith(reservations: updatedReservations);
+        }
+        return spec;
+      }).toList();
+      final updatedProject = oldProject.copyWith(specifications: updatedSpecs);
+      _projectsById[projectId] = updatedProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -295,9 +359,24 @@ class ProjectProvider extends ChangeNotifier {
         resourceSpecificationId,
         resourceReservationId,
       );
-      await fetchProject(projectId, force: true);
+      final oldProject = _projectsById[projectId];
+      if (oldProject == null) return;
+      final updatedSpecs = oldProject.specifications?.map((spec) {
+        if (spec.id == resourceSpecificationId) {
+          final updatedReservations =
+              spec.reservations
+                  ?.where((r) => r.id != resourceReservationId)
+                  .toList() ??
+              [];
+          return spec.copyWith(reservations: updatedReservations);
+        }
+        return spec;
+      }).toList();
+      final updatedProject = oldProject.copyWith(specifications: updatedSpecs);
+      _projectsById[projectId] = updatedProject;
     } catch (e) {
       _error = e.toString();
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -308,8 +387,8 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _projectService.startProject(id);
-      await fetchProject(id, force: true);
+      final newProject = await _projectService.startProject(id);
+      _projectsById[id] = newProject;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -323,8 +402,15 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _projectService.finishProject(id);
-      await fetchProject(id, force: true);
+      final newProject = await _projectService.finishProject(id);
+      final oldProject = _projectsById[id];
+      if (oldProject == null) return;
+      _projectsById[id] = oldProject.copyWith(
+        state: newProject.state,
+        updatedAt: newProject.updatedAt,
+        endDate: newProject.endDate,
+        actualRevenue: newProject.actualRevenue,
+      );
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -338,8 +424,60 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _projectService.cancelProject(id);
-      await fetchProject(id, force: true);
+      final newProject = await _projectService.cancelProject(id);
+      final oldProject = _projectsById[id];
+      if (oldProject == null) return;
+      _projectsById[id] = oldProject.copyWith(
+        state: newProject.state,
+        updatedAt: newProject.updatedAt,
+        endDate: newProject.endDate,
+        actualRevenue: newProject.actualRevenue,
+      );
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateResourceReservation(
+    int projectId,
+    int specificationId,
+    int reservationId,
+    double reservedQuantity,
+    double usedQuantity,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final request = ProjectUpdateResourceReservation(
+        reservedQuantity: reservedQuantity,
+        usedQuantity: usedQuantity,
+      );
+      final newReservation = await _projectService.updateResourceReservation(
+        projectId,
+        specificationId,
+        reservationId,
+        request,
+      );
+      final oldProject = _projectsById[projectId];
+      if (oldProject == null) return;
+      final updatedSpecs = oldProject.specifications?.map((spec) {
+        if (spec.id == specificationId) {
+          final updatedReservations = spec.reservations?.map((res) {
+            if (res.id == reservationId) {
+              return newReservation;
+            }
+            return res;
+          }).toList();
+          return spec.copyWith(reservations: updatedReservations);
+        }
+        return spec;
+      }).toList();
+      final updatedProject = oldProject.copyWith(specifications: updatedSpecs);
+      _projectsById[projectId] = updatedProject;
     } catch (e) {
       _error = e.toString();
     } finally {
