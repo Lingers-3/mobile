@@ -1,11 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/providers/item_type_provider.dart';
-import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/ui/views/inventory/item_screens/show_item_screen.dart';
+import 'package:pocketeer_mobile/ui/widgets/picture_loader.dart';
 import 'package:provider/provider.dart';
 
 class ItemCard extends StatelessWidget {
@@ -37,46 +35,26 @@ class ItemCard extends StatelessWidget {
   }
 
   Widget _buildImage(BuildContext context) {
-    final placeholder = const Center(
-      child: Icon(Icons.image, size: 70, color: AppColors.purple),
-    );
-
-    // !!! ЗМІНА: Отримуємо pictureHash, а не pictureId !!!
-    final pictureHash = context.select<ItemTypeProvider, String?>((provider) {
-      final idx = provider.itemTypes.indexWhere((t) => t.id == item.itemTypeId);
-      if (idx == -1) return null;
-      // Припускаємо, що ItemType містить pictureHash
-      return provider.itemTypes[idx].pictureHash;
+    final pictureId = context.select<ItemTypeProvider, int?>((provider) {
+      final itemType = provider.itemTypes
+          .where((t) => t.id == item.itemTypeId)
+          .firstOrNull;
+      return itemType?.pictureId;
     });
 
-    if (pictureHash == null) return placeholder;
-
-    final pictureProvider = context.read<PictureProvider>();
-    // !!! ЗМІНА: Використовуємо getCachedPictureBytesByHash !!!
-    final cachedBytes = pictureProvider.getCachedPictureBytesByHash(
-      pictureHash,
-    );
-    if (cachedBytes != null) {
-      return SizedBox.expand(
-        child: Image.memory(cachedBytes, fit: BoxFit.cover),
+    if (pictureId == null) {
+      return const Center(
+        child: Icon(Icons.image, size: 70, color: AppColors.purple),
       );
     }
 
-    // !!! ЗМІНА: Використовуємо getPictureBytesByHash !!!
-    return FutureBuilder<Uint8List>(
-      future: pictureProvider.getPictureBytesByHash(pictureHash),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.pink),
-          );
-        }
-        final bytes = snapshot.data;
-        if (bytes != null) {
-          return SizedBox.expand(child: Image.memory(bytes, fit: BoxFit.cover));
-        }
-        return placeholder;
-      },
+    return SizedBox.expand(
+      child: PictureLoader(
+        pictureId: pictureId,
+        size:
+            500, // Хак: великий розмір, щоб якість була ок, а ClipRRect обріже
+        borderRadius: 0,
+      ),
     );
   }
 

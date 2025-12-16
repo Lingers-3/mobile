@@ -1,4 +1,4 @@
-class Picture {
+class PictureMeta {
   final int id;
   final String hash;
   final String fileName;
@@ -7,7 +7,7 @@ class Picture {
   final DateTime createdAt;
   final String? url;
 
-  Picture({
+  PictureMeta({
     required this.id,
     required this.hash,
     required this.fileName,
@@ -17,12 +17,12 @@ class Picture {
     this.url,
   });
 
-  factory Picture.fromJson(Map<String, dynamic> json) {
+  factory PictureMeta.fromJson(Map<String, dynamic> json) {
     final id = (json['id'] as num).toInt();
     final hash = (json['hash'] as String?) ?? '';
     final url = (json['url'] as String?) ?? (json['file_url'] as String?);
 
-    return Picture(
+    return PictureMeta(
       id: id,
       hash: hash,
       fileName:

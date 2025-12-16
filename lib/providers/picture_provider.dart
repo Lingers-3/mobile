@@ -1,47 +1,54 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:pocketeer_mobile/data/models/picture.dart';
+import 'package:pocketeer_mobile/data/models/picture_meta.dart';
 import 'package:pocketeer_mobile/data/services/picture_service.dart';
 
 class PictureProvider extends ChangeNotifier {
   final PictureService _pictureService = PictureService();
   PictureService get pictureService => _pictureService;
 
-  // Кеш для метаданих зображень (Picture objects)
-  final List<Picture> _pictures = [];
-
-  // !!! ЗМІНА: Кешування байтів тепер відбувається за Hash (String) !!!
-  final Map<String, Uint8List> _pictureBytesCache = <String, Uint8List>{};
+  final Map<int, PictureMeta> _picturesMetaById = {};
 
   bool _isLoading = false;
   String? _error;
 
-  List<Picture> get pictures => List.unmodifiable(_pictures);
   bool get loading => _isLoading;
   String? get errorMessage => _error;
+  PictureMeta? getMetaById(int id) => _picturesMetaById[id];
 
-  // !!! ЗМІНА: Допоміжний метод тепер приймає Hash !!!
-  Uint8List? getCachedPictureBytesByHash(String hash) =>
-      _pictureBytesCache[hash];
+  void _upsertPictureMeta(PictureMeta picture) {
+    _picturesMetaById[picture.id] = picture;
+  }
 
-  void _upsertPicture(Picture picture) {
-    final idx = _pictures.indexWhere((p) => p.id == picture.id);
-    if (idx == -1) {
-      _pictures.add(picture);
-    } else {
-      _pictures[idx] = picture;
+  Future<PictureMeta?> fetchPictureMeta(int id) async {
+    if (_picturesMetaById.containsKey(id)) {
+      return _picturesMetaById[id];
+    }
+
+    try {
+      final picture = await _pictureService.getPicture(id);
+
+      _upsertPictureMeta(picture);
+      notifyListeners();
+
+      return picture;
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error fetching picture $id: $e");
+      }
+      return null;
     }
   }
 
-  Future<Picture> uploadPicture(File file) async {
+  Future<PictureMeta> uploadPicture(File file) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       final picture = await _pictureService.createPicture(file);
-      _upsertPicture(picture);
+      _upsertPictureMeta(picture);
       return picture;
     } catch (e) {
       _error = e.toString();
@@ -50,17 +57,5 @@ class PictureProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  // !!! НОВИЙ ОПТИМІЗОВАНИЙ МЕТОД: ЗАВЖДИ ВИКОРИСТОВУЙТЕ ЙОГО !!!
-  Future<Uint8List> getPictureBytesByHash(String hash) async {
-    final cached = _pictureBytesCache[hash];
-    if (cached != null) return cached; // Швидкий доступ до кешу
-
-    // Виклик оптимізованого методу в PictureService (один HTTP-запит)
-    final bytes = await _pictureService.getPictureBytes(hash);
-
-    _pictureBytesCache[hash] = bytes; // Кешування за хешем
-    return bytes;
   }
 }

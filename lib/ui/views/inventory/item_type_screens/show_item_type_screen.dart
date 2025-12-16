@@ -1,10 +1,8 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
-import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/providers/tag_provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
+import 'package:pocketeer_mobile/ui/widgets/picture_loader.dart';
 import 'package:provider/provider.dart';
 import 'edit_item_type_screen.dart';
 
@@ -69,43 +67,28 @@ class _ShowItemTypeScreenState extends State<ShowItemTypeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              height: 400,
-              width: 400,
-              decoration: BoxDecoration(
-                color: AppColors.dialogBackground,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: _itemType.pictureId == null
-                  ? const Icon(Icons.image, color: AppColors.purple, size: 64)
-                  : FutureBuilder<Uint8List>(
-                      future: context
-                          .read<PictureProvider>()
-                          .getPictureBytesByHash(_itemType.pictureHash!),
-                      builder: (context, snapshot) {
-                        final bytes = snapshot.data;
-                        if (bytes != null) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.memory(bytes, fit: BoxFit.cover),
-                          );
-                        }
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.pink,
-                            ),
-                          );
-                        }
-                        return const Icon(
-                          Icons.image,
-                          color: AppColors.purple,
-                          size: 64,
-                        );
-                      },
+            Center(
+              child: _itemType.pictureId != null
+                  ? PictureLoader(
+                      pictureId: _itemType.pictureId!,
+                      size: 400,
+                      borderRadius: 12,
+                    )
+                  : Container(
+                      height: 400,
+                      width: 400,
+                      decoration: BoxDecoration(
+                        color: AppColors.dialogBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.image,
+                        color: AppColors.purple,
+                        size: 64,
+                      ),
                     ),
             ),
+
             const SizedBox(height: 24),
 
             _infoTile("Name", _itemType.name),

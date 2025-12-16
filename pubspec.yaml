@@ -46,6 +46,7 @@ dependencies:
   auth0_flutter_platform_interface: ^1.14.0
   flutter_launcher_icons: ^0.14.4
   image_picker: ^1.2.1
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

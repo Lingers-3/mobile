@@ -4,6 +4,7 @@ import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
+import 'package:pocketeer_mobile/ui/widgets/picture_loader.dart';
 import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 import 'package:pocketeer_mobile/data/models/resource_reservations/resource_reservation.dart';
@@ -36,7 +37,7 @@ class ResourceReservationCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Зображення
-            _buildImage(context),
+            _buildImage(),
 
             const SizedBox(width: 12),
 
@@ -147,43 +148,23 @@ class ResourceReservationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(BuildContext context) {
-    final placeholder = const Icon(
-      Icons.image,
-      color: AppColors.purple,
-      size: 40,
-    );
-
-    final pictureHash =
-        itemType.pictureHash; // <--- ВИКОРИСТОВУЄМО HASH З itemType
-
-    if (pictureHash == null) {
-      return _imageContainer(icon: placeholder); // Немає зображення
+  Widget _buildImage() {
+    if (itemType.pictureId == null) {
+      return Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.image, color: AppColors.purple, size: 40),
+      );
     }
 
-    final provider = context.read<PictureProvider>();
-
-    // 1. ПЕРЕВІРКА КЕШУ: ВИКОРИСТОВУЄМО getCachedPictureBytesByHash
-    final cachedBytes = provider.getCachedPictureBytesByHash(pictureHash);
-    if (cachedBytes != null) {
-      return _imageContainer(image: MemoryImage(cachedBytes)); // З кешу
-    }
-
-    // 2. ЗАВАНТАЖЕННЯ: ВИКОРИСТОВУЄМО getPictureBytesByHash
-    return FutureBuilder<Uint8List>(
-      future: provider.getPictureBytesByHash(pictureHash),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _imageContainer(loading: true); // Завантаження
-        }
-        final bytes = snapshot.data;
-        if (bytes != null) {
-          return _imageContainer(
-            image: MemoryImage(bytes),
-          ); // Успішно завантажено
-        }
-        return _imageContainer(icon: placeholder); // Помилка/Відсутність даних
-      },
+    return PictureLoader(
+      pictureId: itemType.pictureId!,
+      size: 64,
+      borderRadius: 12,
     );
   }
 

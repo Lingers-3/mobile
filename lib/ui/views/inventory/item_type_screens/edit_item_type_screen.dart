@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pocketeer_mobile/ui/widgets/picture_loader.dart';
+import 'package:pocketeer_mobile/ui/widgets/secure_image.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pocketeer_mobile/data/models/unit.dart';
@@ -32,8 +35,8 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
   late final TextEditingController _defaultQtyCtrl;
   late final TextEditingController _shortageCtrl;
 
-  late Unit _baseUnit;
-  late Unit _displayUnit;
+  late Unit? _baseUnit;
+  late Unit? _displayUnit;
   late List<int> _selectedTags;
 
   File? _imageFile;
@@ -42,6 +45,7 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
   bool _uploadingImage = false;
 
   bool _saving = false;
+  bool _initError = false;
 
   @override
   void initState() {
@@ -56,17 +60,35 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
       text: widget.itemType.shortageThreshold?.toString() ?? "0",
     );
 
-    _baseUnit = findUnit(widget.itemType.baseMeasurementUnit);
-    _displayUnit = findUnit(widget.itemType.displayMeasurementUnit);
-
-    _baseUnit = _ensureInList(_baseUnit, allUnits);
-    _displayUnit = _ensureInList(
-      _displayUnit,
-      unitsOfCategory(_baseUnit.category),
-    );
-
+    _pictureId = widget.itemType.pictureId; // Ініціалізуємо ID картинки
     _selectedTags = [...widget.itemType.tagIds];
-    _pictureHash = widget.itemType.pictureHash;
+
+    // БЕЗПЕЧНА ІНІЦІАЛІЗАЦІЯ ЮНІТІВ
+    try {
+      final rawBase = findUnit(widget.itemType.baseMeasurementUnit);
+      final rawDisplay = findUnit(widget.itemType.displayMeasurementUnit);
+
+      if (allUnits.isNotEmpty) {
+        _baseUnit = _ensureInList(rawBase, allUnits);
+
+        final categoryUnits = unitsOfCategory(_baseUnit!.category);
+        if (categoryUnits.isNotEmpty) {
+          _displayUnit = _ensureInList(rawDisplay, categoryUnits);
+        } else {
+          _displayUnit = _baseUnit;
+        }
+      } else {
+        if (kDebugMode) {
+          print("CRITICAL: allUnits is empty!");
+        }
+        _initError = true;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error initializing units: $e");
+      }
+      _initError = true;
+    }
   }
 
   @override
@@ -104,36 +126,51 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_baseUnit == null || _displayUnit == null) return;
 
     setState(() => _saving = true);
 
     final req = ItemTypeUpdateRequest(
       name: _nameCtrl.text.trim(),
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-      baseMeasurementUnit: _baseUnit.backendValue,
-      displayMeasurementUnit: _displayUnit.backendValue,
+      baseMeasurementUnit: _baseUnit!.backendValue,
+      displayMeasurementUnit: _displayUnit!.backendValue,
       defaultQuantity: double.tryParse(_defaultQtyCtrl.text),
       shortageThreshold: double.tryParse(_shortageCtrl.text),
       pictureId: _pictureId,
       tagIds: _selectedTags,
     );
 
-    final updated = await _service.updateItemType(widget.itemType.id, req);
+    try {
+      final updated = await _service.updateItemType(widget.itemType.id, req);
 
-    context.read<ItemTypeProvider>().replaceItem(updated);
-    context.read<ItemProvider>().updateItemsUnitForType(
-      widget.itemType.id,
-      updated.baseMeasurementUnit,
-    );
+      if (!mounted) return;
+      context.read<ItemTypeProvider>().replaceItem(updated);
+      context.read<ItemProvider>().updateItemsUnitForType(
+        widget.itemType.id,
+        updated.baseMeasurementUnit,
+      );
 
-    if (mounted) Navigator.pop(context, updated);
-
-    setState(() => _saving = false);
+      Navigator.pop(context, updated);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error saving: $e")));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final compatibleDisplayUnits = unitsOfCategory(_baseUnit.category);
+    if (_initError || _baseUnit == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Error")),
+        body: const Center(child: Text("Failed to load units configuration.")),
+      );
+    }
+
+    final compatibleDisplayUnits = unitsOfCategory(_baseUnit!.category);
 
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
@@ -159,48 +196,8 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.dialogBackground,
                     borderRadius: BorderRadius.circular(12),
-                    image: _imageFile != null
-                        ? DecorationImage(
-                            image: FileImage(_imageFile!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
                   ),
-                  child: _uploadingImage
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.pink,
-                          ),
-                        )
-                      : _imageFile == null && _pictureId != null
-                      ? FutureBuilder<Uint8List>(
-                          future: context
-                              .read<PictureProvider>()
-                              .getPictureBytesByHash(_pictureHash!),
-                          builder: (context, snapshot) {
-                            final bytes = snapshot.data;
-                            if (bytes != null) {
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.memory(bytes, fit: BoxFit.cover),
-                              );
-                            }
-                            return const Center(
-                              child: Icon(
-                                Icons.add_a_photo,
-                                color: AppColors.pink,
-                                size: 50,
-                              ),
-                            );
-                          },
-                        )
-                      : const Center(
-                          child: Icon(
-                            Icons.add_a_photo,
-                            color: AppColors.pink,
-                            size: 50,
-                          ),
-                        ),
+                  child: _buildImagePreview(),
                 ),
               ),
 
@@ -348,9 +345,51 @@ class _EditItemTypeScreenState extends State<EditItemTypeScreen> {
   }
 
   Unit _ensureInList(Unit unit, List<Unit> list) {
+    if (list.isEmpty) return unit;
     return list.firstWhere(
       (u) => u.backendValue == unit.backendValue,
       orElse: () => list.first,
+    );
+  }
+
+  Widget _buildImagePreview() {
+    if (_uploadingImage) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.pink),
+      );
+    }
+
+    if (_imageFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(_imageFile!, fit: BoxFit.cover),
+      );
+    }
+
+    if (_pictureHash != null && _pictureHash!.isNotEmpty) {
+      return SecureImage(
+        pictureHash: _pictureHash!,
+        width: 400,
+        height: 400,
+        borderRadius: 12,
+      );
+    }
+
+    if (_pictureId != null) {
+      return PictureLoader(
+        pictureId: _pictureId!,
+        size: 400,
+        borderRadius: 12,
+        placeholderIcon: const Icon(
+          Icons.add_a_photo,
+          color: AppColors.pink,
+          size: 50,
+        ),
+      );
+    }
+
+    return const Center(
+      child: Icon(Icons.add_a_photo, color: AppColors.pink, size: 50),
     );
   }
 }
