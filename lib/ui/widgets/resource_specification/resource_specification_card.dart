@@ -36,7 +36,7 @@ class ResourceSpecificationCard extends StatelessWidget {
 
     // Візуальні налаштування
     final isTool = specification.resourceType == ResourceType.tool;
-    final typeColor = isTool ? Colors.orange : Colors.blue;
+    final typeColor = isTool ? AppColors.pink : AppColors.cyan;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -68,6 +68,7 @@ class ResourceSpecificationCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.purple,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -151,14 +152,10 @@ class ResourceSpecificationCard extends StatelessWidget {
                   _buildStatItem(
                     'Planned',
                     specification.plannedQuantity,
-                    Colors.black87,
+                    AppColors.purple,
                   ),
                   _buildVerticalDivider(),
-                  _buildStatItem(
-                    'Reserved',
-                    actualReserved,
-                    Colors.blue.shade700,
-                  ),
+                  _buildStatItem('Reserved', actualReserved, AppColors.cyan),
                   _buildVerticalDivider(),
                   _buildStatItem(
                     'Used',

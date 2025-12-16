@@ -83,28 +83,35 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           ),
         ],
       ),
+
       // --- ADD RESOURCE BUTTON ---
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'project_details_fab_${project.id}',
-        backgroundColor: AppColors.pink,
-        onPressed: () {
-          final usedTypeIds = projectSpecs.map((s) => s.itemTypeId).toList();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SelectResourceSpecificationScreen(
-                excludedItemTypeIds: usedTypeIds,
-                projectId: project.id,
+      floatingActionButton:
+          project.state != ProjectState.planned &&
+              project.state != ProjectState.inProgress
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'project_details_fab_${project.id}',
+              backgroundColor: AppColors.pink,
+              onPressed: () {
+                final usedTypeIds = projectSpecs
+                    .map((s) => s.itemTypeId)
+                    .toList();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SelectResourceSpecificationScreen(
+                      excludedItemTypeIds: usedTypeIds,
+                      projectId: project.id,
+                    ),
+                  ),
+                );
+              },
+              label: const Text(
+                'Add resource',
+                style: TextStyle(color: AppColors.primaryBackground),
               ),
+              icon: const Icon(Icons.add, color: AppColors.primaryBackground),
             ),
-          );
-        },
-        label: const Text(
-          'Add resource',
-          style: TextStyle(color: AppColors.primaryBackground),
-        ),
-        icon: const Icon(Icons.add, color: AppColors.primaryBackground),
-      ),
       body: Container(
         color: AppColors.primaryBackground,
         child: SingleChildScrollView(
