@@ -30,7 +30,6 @@ class BottomNav extends StatelessWidget {
           label: 'Projects',
         ),
         BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
-        BottomNavigationBarItem(icon: Icon(Icons.accessible), label: 'Debug'),
       ],
     );
   }

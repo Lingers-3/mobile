@@ -1,9 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
-import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/picture_loader.dart';
-import 'package:provider/provider.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
 import 'package:pocketeer_mobile/theme/app_theme.dart';
 

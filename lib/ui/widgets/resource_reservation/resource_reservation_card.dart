@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketeer_mobile/data/models/item_types/item_type.dart';
 import 'package:pocketeer_mobile/data/models/items/item.dart';
-import 'package:pocketeer_mobile/providers/picture_provider.dart';
 import 'package:pocketeer_mobile/providers/project_provider.dart';
 import 'package:pocketeer_mobile/ui/widgets/picture_loader.dart';
 import 'package:provider/provider.dart';
@@ -168,28 +166,4 @@ class ResourceReservationCard extends StatelessWidget {
     );
   }
 
-  Widget _imageContainer({
-    ImageProvider? image,
-    bool loading = false,
-    Widget? icon,
-  }) {
-    return Container(
-      height: 64,
-      width: 64,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.black26,
-        image: image != null
-            ? DecorationImage(image: image, fit: BoxFit.cover)
-            : null,
-      ),
-      child: loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.pink),
-            )
-          : image == null
-          ? icon
-          : null,
-    );
-  }
 }
