@@ -122,8 +122,8 @@ class Project {
       startDate: json['start_date'] != null
           ? DateTime.parse(json['start_date'])
           : null,
-      endDate: json['end_date'] != null
-          ? DateTime.parse(json['end_date'])
+      endDate: json['finished_at'] != null
+          ? DateTime.parse(json['finished_at'])
           : null,
       plannedIncome: (json['planned_income'] as num?)?.toDouble(),
       actualRevenue: (json['actual_income'] as num?)?.toDouble(),
@@ -149,7 +149,7 @@ class Project {
       'planned_deadline': plannedDeadline?.toUtc().toIso8601String(),
       'actual_deadline': actualDeadline?.toUtc().toIso8601String(),
       'start_date': startDate?.toUtc().toIso8601String(),
-      'end_date': endDate?.toUtc().toIso8601String(),
+      'finished_at': endDate?.toUtc().toIso8601String(),
       'planned_income': plannedIncome,
       'actual_income': actualRevenue,
       'currency': currency,

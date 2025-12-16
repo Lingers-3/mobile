@@ -477,7 +477,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   .cancelProject(project.id)
                             : null,
                         child: const Text(
-                          'Reject',
+                          'Cancel',
                           style: TextStyle(color: AppColors.purple),
                         ),
                       ),
